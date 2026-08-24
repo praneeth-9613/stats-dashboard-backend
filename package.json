@@ -1,0 +1,22 @@
+{
+  "name": "arsenal",
+  "version": "1.0.0",
+  "main": "main.ts",
+  "type": "module",
+  "scripts": {
+    "scrape": "tsx scrape.ts",
+    "server": "tsx server.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "express": "^5.2.1",
+    "playwright": "^1.62.1",
+    "tsx": "^4.23.11"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0"
+  }
+}
