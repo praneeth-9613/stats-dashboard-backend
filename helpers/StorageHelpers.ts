@@ -3,8 +3,8 @@ import { PlayersDatabase } from "../types/StoredPlayer";
 import { MatchesDatabase } from "../types/StoredStats";
 import { getDataDirectory, loadJson } from "./DirectoryHelpers";
 
-export function loadMatches(teamName: string): MatchesDatabase {
-    const MATCHES_FILE = path.join(getDataDirectory(teamName), "matches.json");
+export function loadMatches(teamId: number): MatchesDatabase {
+    const MATCHES_FILE = path.join(getDataDirectory(teamId), "matches.json");
 
     const matches =
         loadJson<MatchesDatabase>(
@@ -15,8 +15,8 @@ export function loadMatches(teamName: string): MatchesDatabase {
     return matches;
 }
 
-export async function loadPlayers(teamName: string): Promise<PlayersDatabase> {
-    const PLAYERS_FILE = path.join(getDataDirectory(teamName), "players.json");
+export async function loadPlayers(teamId: number): Promise<PlayersDatabase> {
+    const PLAYERS_FILE = path.join(getDataDirectory(teamId), "players.json");
 
     const players =
         loadJson<PlayersDatabase>(

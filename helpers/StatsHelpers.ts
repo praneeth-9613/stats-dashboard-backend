@@ -1,17 +1,18 @@
 import { GOALKEEPER_STAT_CONFIG, OUTFIELD_STAT_CONFIG } from "../constants";
 import { FotMobPlayer } from "../types/FotmobTypes";
 import { MatchDetailsResponse } from "../types/MatchDetails";
-import { MatchesDatabase, StoredPlayer, StoredStat } from "../types/StoredStats";
+import { PlayersDatabase } from "../types/StoredPlayer";
+import { MatchesDatabase, StoredPlayerStats, StoredStat } from "../types/StoredStats";
 
 export function extractTeamSpecificPlayers(
     matchData: MatchDetailsResponse,
     teamId: number
-): Record<string, StoredPlayer> {
+): Record<string, StoredPlayerStats> {
 
     const playerStats =
         matchData.content?.playerStats ?? {};
 
-    const players: Record<string, StoredPlayer> = {};
+    const players: Record<string, StoredPlayerStats> = {};
 
     for (const player of Object.values(playerStats)) {
 
@@ -20,27 +21,16 @@ export function extractTeamSpecificPlayers(
         }
 
         players[String(player.id)] = {
-
             id:
                 player.id,
 
             name:
                 player.name,
 
-            shirtNumber:
-                player.shirtNumber ?? null,
-
-            isGoalkeeper:
-                player.isGoalkeeper ?? false,
-
-            positionId:
-                player.positionId ?? null,
-
-            usualPosition:
-                player.usualPosition ?? null,
-
             stats:
-                extractPlayerStats(player)
+                extractPlayerStats(player),
+
+            isGoalkeeper: player.isGoalkeeper ?? false
         };
     }
 
@@ -114,33 +104,45 @@ function extractPlayerStats(
 }
 
 export function calculateSeasonStats(
-    matches: MatchesDatabase
-): Record<string, {
-    id: number;
-    name: string;
-    shirtNumber: string | null;
-    isGoalkeeper: boolean;
-    appearances: number;
-    averageRating: number | null;
-    stats: Record<string, StoredStat>;
-}> {
+    matches: MatchesDatabase,
+    processedPlayers: PlayersDatabase
+): Record<string, StoredPlayerStats> {
 
-    const players: Record<string, {
-        id: number;
-        name: string;
-        shirtNumber: string | null;
-        isGoalkeeper: boolean;
-        appearances: number;
-        stats: Record<string, StoredStat>;
-        ratingSum: number;
-        ratingMatches: number;
-    }> = {};
+    const players: Record<string, StoredPlayerStats> = {};
+
+    console.log(processedPlayers);
 
     for (const match of Object.values(matches)) {
 
-        for (const player of Object.values(match.players)) {
+        for (const player of Object.values(processedPlayers)) {
 
             const playerId = String(player.id);
+
+            if (!(playerId in match.players)) {
+
+                if (players[playerId]) continue;
+
+                players[playerId] = {
+
+                    id: player.id,
+
+                    name: player.name,
+
+                    appearances: 0,
+
+                    isGoalkeeper: player.positions.map(pos => pos.label.toLowerCase()).includes("goalkeeper"),
+
+                    stats: {},
+
+                    ratingSum: 0,
+
+                    ratingMatches: 0,
+
+                    averageRating: 0
+                };
+
+                continue;
+            };
 
             if (!players[playerId]) {
 
@@ -150,37 +152,39 @@ export function calculateSeasonStats(
 
                     name: player.name,
 
-                    shirtNumber:
-                        player.shirtNumber,
-
-                    isGoalkeeper:
-                        player.isGoalkeeper,
-
                     appearances: 0,
+
+                    isGoalkeeper: false,
 
                     stats: {},
 
                     ratingSum: 0,
 
-                    ratingMatches: 0
+                    ratingMatches: 0,
+
+                    averageRating: 0
                 };
             }
 
             const seasonPlayer =
                 players[playerId];
 
+            const matchPlayer = match.players[playerId];
 
             const minutes =
-                player.stats.minutes_played?.value ?? 0;
+                matchPlayer.stats.minutes_played?.value ?? 0;
 
             if (minutes > 0) {
-                seasonPlayer.appearances++;
+                if (seasonPlayer.appearances) {
+                    seasonPlayer.appearances++
+                } else {
+                    seasonPlayer.appearances = 1;
+                }
             }
-
 
             for (
                 const [key, stat]
-                of Object.entries(player.stats)
+                of Object.entries(matchPlayer.stats)
             ) {
 
                 if (key === "rating_title") {
@@ -195,29 +199,25 @@ export function calculateSeasonStats(
             }
 
             const rating =
-                player.stats.rating_title?.value;
+                matchPlayer.stats.rating_title?.value;
 
             if (
                 rating !== undefined &&
                 minutes > 0
             ) {
 
-                seasonPlayer.ratingSum += rating;
-
-                seasonPlayer.ratingMatches++;
+                if (seasonPlayer.ratingSum && seasonPlayer.ratingMatches) {
+                    seasonPlayer.ratingSum += rating;
+                    seasonPlayer.ratingMatches++;
+                } else {
+                    seasonPlayer.ratingSum = rating;
+                    seasonPlayer.ratingMatches = 1;
+                }
             }
         }
     }
 
-    const result: Record<string, {
-        id: number;
-        name: string;
-        shirtNumber: string | null;
-        isGoalkeeper: boolean;
-        appearances: number;
-        averageRating: number | null;
-        stats: Record<string, StoredStat>;
-    }> = {};
+    const result: Record<string, StoredPlayerStats> = {};
 
     for (
         const [playerId, player]
@@ -225,34 +225,16 @@ export function calculateSeasonStats(
     ) {
 
         result[playerId] = {
-
-            id:
-                player.id,
-
-            name:
-                player.name,
-
-            shirtNumber:
-                player.shirtNumber,
-
-            isGoalkeeper:
-                player.isGoalkeeper,
-
-            appearances:
-                player.appearances,
+            ...player,
 
             averageRating:
-                player.ratingMatches > 0
+                (player.ratingSum && player.ratingMatches && player.ratingMatches > 0)
                     ? Number(
-                        (
-                            player.ratingSum /
-                            player.ratingMatches
-                        ).toFixed(2)
-                    )
-                    : null,
 
-            stats:
-                player.stats
+                        (player.ratingSum /
+                            player.ratingMatches
+                        ).toFixed(2))
+                    : null
         };
     }
 

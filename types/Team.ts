@@ -6,4 +6,15 @@ export interface TeamResponse {
             fixtures?: Fixture[];
         };
     };
+
+    squad?: {
+        squad?: {
+            title: string;
+            members: { id: number }[]
+        }[]
+    }
+
+    details?: {
+        name: string
+    }
 }

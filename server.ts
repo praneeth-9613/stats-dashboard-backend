@@ -2,7 +2,6 @@ import express from "express";
 import { main } from "./main";
 import { ScraperOptions, ScrapeStatus } from "./types/Common";
 import { readJsonFile } from "./helper";
-import { TEAMS } from "./constants";
 
 const app = express();
 
@@ -25,7 +24,7 @@ function parseIds(value: unknown): number[] {
         );
 }
 
-const scrapeStatus: Record<number, ScrapeStatus> = {};
+const scrapeStatuses: Record<number, ScrapeStatus> = {};
 
 /**
  * Start scraper
@@ -51,7 +50,7 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
     const teamName = req.params.teamName;
 
     // Prevent multiple scraper processes
-    if (scrapeStatus[teamId].running) {
+    if (scrapeStatuses[teamId]?.running) {
         res.status(409).json({
             started: false,
             message: "Scraper is already running",
@@ -59,7 +58,7 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
 
         return;
     }
-    const resync = req.query.resync ?? false;
+    const resync = (req?.query?.resync === "true")
 
     const playerIds = parseIds(
         req.query.playerIds
@@ -69,18 +68,23 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
         req.query.matchIds
     );
 
+    scrapeStatuses[teamId] = {
+        running: true,
+        completed: {
+            fixtures: false,
+            season_stats: false,
+            players: false
+        }
+    };
+
+
     const options: ScraperOptions = {
         resync,
         playerIds,
         matchIds,
         teamId,
-        teamName
-    };
-
-    scrapeStatus[teamId] = {
-        running: true,
-        success: null,
-        error: null,
+        teamName,
+        scrapeStatuses
     };
 
     console.log("Starting scraper:");
@@ -94,10 +98,8 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
      */
     main(options)
         .then(() => {
-            scrapeStatus[teamId] = {
-                running: false,
-                success: true,
-                error: null,
+            scrapeStatuses[teamId] = {
+                running: false
             };
 
             console.log(
@@ -110,9 +112,8 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
                 error
             );
 
-            scrapeStatus[teamId] = {
+            scrapeStatuses[teamId] = {
                 running: false,
-                success: false,
                 error:
                     error instanceof Error
                         ? error.message
@@ -135,11 +136,11 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
  * GET /api/scrape/status
  */
 app.get(
-    "/api/scrape/status/:teamId",
+    "/api/scrape/:teamId/status",
     (req: any, res: any) => {
 
         const teamId = Number(req.params.teamId);
-        res.json(scrapeStatus[teamId]);
+        res.json(scrapeStatuses[teamId]);
     }
 );
 
@@ -153,7 +154,7 @@ app.get("/api/team/:teamId/matches", async (req, res) => {
     } catch (error) {
         console.error("Failed to read matches:", error);
 
-       res.status(200).json([]);
+        res.status(200).json([]);
     }
 });
 

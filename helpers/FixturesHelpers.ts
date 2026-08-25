@@ -3,19 +3,24 @@ import { MatchesDatabase } from "../types/StoredStats";
 import { TeamResponse } from "../types/Team";
 import { fetchJson } from "./DirectoryHelpers";
 
-export async function fetchSeasonFixtures(teamId: number, team: string): Promise<Fixture[]> {
-
+export async function fetchTeamInfo(teamId: number): Promise<TeamResponse> {
     const TEAM_URL = `https://www.fotmob.com/api/data/teams?id=${teamId}&ccode3=IND`
-
-    console.log(`Fetching ${team} fixtures...`);
 
     const data =
         await fetchJson<TeamResponse>(
             TEAM_URL
         );
 
+    return data;
+}
+
+export async function fetchSeasonFixtures(teamInfo: TeamResponse): Promise<Fixture[]> {
+    const team = teamInfo?.details?.name;
+
+    console.log(`Fetching ${team} fixtures...`);
+
     const fixtures =
-        data.fixtures
+        teamInfo.fixtures
             ?.allFixtures
             ?.fixtures ?? [];
 

@@ -1,10 +1,11 @@
 import { Fixture } from "./types/FixtureTypes";
 import { ensureDataDirectory } from "./helpers/DirectoryHelpers";
-import { fetchSeasonFixtures, getCompletedFixtures, getFixturesToAdd, getFixturesToProcess } from "./helpers/FixturesHelpers";
+import { fetchSeasonFixtures, fetchTeamInfo, getCompletedFixtures, getFixturesToAdd, getFixturesToProcess } from "./helpers/FixturesHelpers";
 import { loadMatches, loadPlayers } from "./helpers/StorageHelpers";
 import { addMatches, processMatches, processPlayers } from "./helpers/ProcessHelpers";
-import { getNewPlayerIds } from "./helpers/PlayerHelpers";
+import { fetchSquadPlayers, getNewPlayerIds } from "./helpers/PlayerHelpers";
 import { ScraperOptions } from "./types/Common";
+import { completePhase, startPhase } from "./helper";
 
 export async function main({
     teamId,
@@ -12,7 +13,10 @@ export async function main({
     resync,
     playerIds,
     matchIds,
+    scrapeStatuses = {}
 }: ScraperOptions): Promise<void> {
+
+    const scrapeStatus = scrapeStatuses[teamId];
 
     if (!teamId || !teamName) {
         console.error("Both teamId and teamName are required !");
@@ -31,7 +35,48 @@ export async function main({
 
     ensureDataDirectory(teamId);
 
-    const matches = loadMatches(teamName);
+    const teamInfo = await fetchTeamInfo(teamId);
+
+    const existingPlayers =
+        await loadPlayers(teamId);
+
+    console.log(
+        `Previously processed players: ` +
+        `${Object.keys(existingPlayers).length}`
+    );
+
+    const allPlayerIds: number[] = await fetchSquadPlayers(teamInfo);
+
+    const newPlayerIds: Set<number> =
+        getNewPlayerIds(
+            existingPlayers,
+            allPlayerIds,
+            resync
+        );
+
+    console.log(
+        `New players to process: ` +
+        `${newPlayerIds.size}`
+    );
+
+    startPhase(
+        scrapeStatus,
+        "players",
+        newPlayerIds.size,
+        newPlayerIds.size > 0 ? "Processing player profiles" : "No new players to process"
+    );
+
+    const processedPlayers = await processPlayers(
+        newPlayerIds,
+        existingPlayers,
+        teamId,
+        teamName,
+        scrapeStatus
+    );
+
+    completePhase(scrapeStatus, "players");
+
+    const matches = loadMatches(teamId);
 
     console.log(
         `Previously processed matches: ` +
@@ -39,7 +84,7 @@ export async function main({
     );
 
     const seasonFixtures: Fixture[] =
-        await fetchSeasonFixtures(teamId, teamName);
+        await fetchSeasonFixtures(teamInfo);
 
     const completedFixtures: Fixture[] =
         getCompletedFixtures(
@@ -53,12 +98,21 @@ export async function main({
         `${fixturesToAdd.length}`
     );
 
-    await addMatches(fixturesToAdd, matches, teamId);
+    startPhase(
+        scrapeStatus,
+        "fixtures",
+        fixturesToAdd.length,
+        fixturesToAdd.length > 0 ? "Adding fixtures to schedule" : "No new fixtures to add to schedule"
+    );
+
+    await addMatches(fixturesToAdd, matches, teamId, scrapeStatus);
 
     console.log(
         `Completed season fixtures: ` +
         `${completedFixtures.length}`
     );
+
+    completePhase(scrapeStatus, "fixtures");
 
     const newFixtures = getFixturesToProcess(completedFixtures, matches, resync);
 
@@ -67,32 +121,14 @@ export async function main({
         `${newFixtures.length}`
     );
 
-    await processMatches(newFixtures, matches, teamId, teamName);
-
-    const players =
-        await loadPlayers(teamName);
-
-    console.log(
-        `Previously processed players: ` +
-        `${Object.keys(players).length}`
+    startPhase(
+        scrapeStatus,
+        "season_stats",
+        newFixtures.length,
+        newFixtures.length > 0 ? "Computing season stats for completed matches" : "No new completed matches to process"
     );
 
-    const newPlayerIds =
-        getNewPlayerIds(
-            matches,
-            players,
-            resync
-        );
+    await processMatches(newFixtures, matches, teamId, teamName, processedPlayers, scrapeStatus);
 
-    console.log(
-        `New players to process: ` +
-        `${newPlayerIds.size}`
-    );
-
-    await processPlayers(
-        newPlayerIds,
-        players,
-        teamId,
-        teamName
-    );
+    completePhase(scrapeStatus, "season_stats");
 }

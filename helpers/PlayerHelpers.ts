@@ -2,8 +2,12 @@ import { FOTMOB_PLAYER_API_URL } from "../constants";
 import { FotMobPlayerInformation, FotmobPlayerInjuryInformation, FotMobPlayerResponse } from "../types/FotmobTypes";
 import { InjuryInformation, PLAYER_INFORMATION_MAP, PlayerInformation } from "../types/PlayerInformationTypes";
 import { PlayersDatabase, StoredPlayerData } from "../types/StoredPlayer";
-import { MatchesDatabase } from "../types/StoredStats";
+import { TeamResponse } from "../types/Team";
 import { fetchJson } from "./DirectoryHelpers";
+
+export async function fetchSquadPlayers(teamInfo: TeamResponse): Promise<number[]> {
+    return teamInfo?.squad?.squad?.filter(sq => sq.title.toLowerCase() !== "coach").map(sq => sq.members.map(member => member.id).flat()).flat() ?? [];
+}
 
 export async function fetchPlayerData(
     playerId: number
@@ -84,35 +88,22 @@ function extractInjuryInformation(fotmobPlayerInjuryInformation: FotmobPlayerInj
 }
 
 export function getNewPlayerIds(
-    matches: MatchesDatabase,
-    players: PlayersDatabase,
+    existingPlayers: PlayersDatabase,
+    allPlayerIds: number[],
     resync: boolean = false
 ): Set<number> {
 
-    const existingPlayerIds =
-        new Set(
-            Object.values(players)
-                .map(player => player.id)
-        );
-
-    const newPlayerIds =
-        new Set<number>();
-
-    for (const match of Object.values(matches)) {
-
-        for (const player of Object.values(match.players)) {
-
-            if (resync) {
-                newPlayerIds.add(player.id);
-                continue;
-            }
-
-            if (!existingPlayerIds.has(player.id)) {
-
-                newPlayerIds.add(player.id);
-            }
-        }
+    if (resync) {
+        return new Set(allPlayerIds);
     }
 
-    return newPlayerIds;
+    const existingPlayerIds = new Set(
+        Object.values(existingPlayers).map(player => player.id)
+    );
+
+    return new Set(
+        allPlayerIds.filter(
+            playerId => !existingPlayerIds.has(playerId)
+        )
+    );
 }

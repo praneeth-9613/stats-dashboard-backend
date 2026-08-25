@@ -18,7 +18,7 @@ main({
     teamName,
     resync: getArgValue("--resync") === "true",
     playerIds: [],
-    matchIds: [],
+    matchIds: [],    
 }).catch((error) => {
     console.error(error);
     process.exit(1);

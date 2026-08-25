@@ -1,19 +1,20 @@
 import { FixtureTeam } from "./FixtureTypes";
-import { GoalEvent, InfoBoxStadium } from "./MatchDetails";
+import { InfoBoxStadium } from "./MatchDetails";
 
 export interface StoredStat {
     value: number;
     total?: number;
 }
 
-export interface StoredPlayer {
+export interface StoredPlayerStats {
     id: number;
     name: string;
-    shirtNumber: string | null;
     isGoalkeeper: boolean;
-    positionId: number | null;
-    usualPosition: number | null;
     stats: Record<string, StoredStat>;
+    appearances?: number;
+    ratingSum?: number;
+    ratingMatches?: number;
+    averageRating?: number | null;
 }
 
 export interface StoredPOM {
@@ -59,7 +60,7 @@ export interface StoredMatch {
 
     scoreIncludesPenaltyShootout: boolean;
 
-    players: Record<string, StoredPlayer>;
+    players: Record<string, StoredPlayerStats>;
 
     playerOfTheMatch: StoredPOM | null;
 
@@ -68,7 +69,7 @@ export interface StoredMatch {
     finalStatus: string | null;
 
     goalscorers: StoredGoalscorers | null;
-    
+
     isCompleted: boolean;
 
 }

@@ -7,14 +7,24 @@ import { MatchesDatabase, StoredGoalEvent, StoredGoalscorers, StoredMatch, Store
 import { fetchJson, getDataDirectory, saveJson } from "./DirectoryHelpers";
 import { fetchPlayerData } from "./PlayerHelpers";
 import { calculateSeasonStats, extractTeamSpecificPlayers } from "./StatsHelpers";
+import { ScrapeStatus } from "../types/Common";
+import { updateProgress } from "../helper";
 
-export async function processMatches(completedFixtures: Fixture[], matches: MatchesDatabase, teamId: number, teamName: string): Promise<void> {
+export async function processMatches(completedFixtures: Fixture[], matches: MatchesDatabase, teamId: number, teamName: string, processedPlayers: PlayersDatabase, scrapeStatus: ScrapeStatus): Promise<void> {
     const MATCHES_FILE = path.join(getDataDirectory(teamId), "matches.json");
 
     const SEASON_FILE = path.join(getDataDirectory(teamId), "season-stats.json");
 
+    let matchIndex = 0;
+
     for (const fixture of completedFixtures) {
         try {
+            updateProgress(
+                scrapeStatus,
+                ++matchIndex,
+                `Computing season statistics ${matchIndex} of ${completedFixtures.length}`
+            );
+
             const match =
                 await processMatch(
                     fixture,
@@ -54,7 +64,8 @@ export async function processMatches(completedFixtures: Fixture[], matches: Matc
 
     const seasonStats =
         calculateSeasonStats(
-            matches
+            matches,
+            processedPlayers
         );
 
     saveJson(
@@ -168,10 +179,15 @@ async function processMatch(
     };
 }
 
-export async function addMatches(newFixtures: Fixture[], matches: MatchesDatabase, teamId: number): Promise<void> {
+export async function addMatches(newFixtures: Fixture[], matches: MatchesDatabase, teamId: number, scrapeStatus: ScrapeStatus): Promise<void> {
     const MATCHES_FILE = path.join(getDataDirectory(teamId), "matches.json");
 
+    let fixtureIndex = 0;
+
     for (const fixture of newFixtures) {
+
+        updateProgress(scrapeStatus, ++fixtureIndex, `Adding match ${fixtureIndex} of ${newFixtures.length}`)
+
         try {
             const match =
                 await addUpcomingMatch(
@@ -336,11 +352,16 @@ export async function processPlayers(
     newPlayerIds: Set<number>,
     players: PlayersDatabase,
     teamId: number,
-    teamName: string
-): Promise<void> {
+    teamName: string,
+    scrapeStatus: ScrapeStatus
+): Promise<PlayersDatabase> {
     const PLAYERS_FILE = path.join(getDataDirectory(teamId), "players.json");
 
+    let playerIndex = 0;
+
     for (const playerId of newPlayerIds) {
+
+        updateProgress(scrapeStatus, ++playerIndex, `Processing player ${playerIndex} of ${newPlayerIds.size}`)
 
         console.log(
             `Fetching player ${playerId}...`
@@ -376,6 +397,8 @@ export async function processPlayers(
         `Players processed: ` +
         `${Object.keys(players).length}`
     );
+
+    return players;
 }
 
 function sleep(ms: number): Promise<void> {
