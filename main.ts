@@ -3,7 +3,7 @@ import { ensureDataDirectory } from "./helpers/DirectoryHelpers";
 import { fetchSeasonFixtures, fetchTeamInfo, getCompletedFixtures, getFixturesToAdd, getFixturesToProcess } from "./helpers/FixturesHelpers";
 import { loadMatches, loadPlayers } from "./helpers/StorageHelpers";
 import { addMatches, processMatches, processPlayers } from "./helpers/ProcessHelpers";
-import { fetchSquadPlayers, getNewPlayerIds } from "./helpers/PlayerHelpers";
+import { fetchSquadPlayers, findAcademyPlayersNotInSquad, getNewPlayerIds } from "./helpers/PlayerHelpers";
 import { ScraperOptions } from "./types/Common";
 import { completePhase, startPhase } from "./helper";
 
@@ -131,4 +131,29 @@ export async function main({
     await processMatches(newFixtures, matches, teamId, teamName, processedPlayers, scrapeStatus);
 
     completePhase(scrapeStatus, "season_stats");
+
+    const existingPlayerIds = new Set(Object.values(existingPlayers).map(existingPlayer => existingPlayer.id));
+    const academyPlayerIds = findAcademyPlayersNotInSquad(matches, resync ? newPlayerIds : existingPlayerIds);
+
+    console.log(
+        `Academy players to process: ` +
+        `${academyPlayerIds.size}`
+    );
+
+    startPhase(
+        scrapeStatus,
+        "academy_players",
+        academyPlayerIds.size,
+        academyPlayerIds.size > 0 ? "Processing academy player profiles" : "No new academy players to process"
+    );
+
+    await processPlayers(
+        academyPlayerIds,
+        existingPlayers,
+        teamId,
+        teamName,
+        scrapeStatus
+    );
+
+    completePhase(scrapeStatus, "academy_players");
 }

@@ -2,6 +2,7 @@ import { FOTMOB_PLAYER_API_URL } from "../constants";
 import { FotMobPlayerInformation, FotmobPlayerInjuryInformation, FotMobPlayerResponse } from "../types/FotmobTypes";
 import { InjuryInformation, PLAYER_INFORMATION_MAP, PlayerInformation } from "../types/PlayerInformationTypes";
 import { PlayersDatabase, StoredPlayerData } from "../types/StoredPlayer";
+import { MatchesDatabase } from "../types/StoredStats";
 import { TeamResponse } from "../types/Team";
 import { fetchJson } from "./DirectoryHelpers";
 
@@ -104,6 +105,20 @@ export function getNewPlayerIds(
     return new Set(
         allPlayerIds.filter(
             playerId => !existingPlayerIds.has(playerId)
+        )
+    );
+}
+
+export function findAcademyPlayersNotInSquad(matches: MatchesDatabase, newPlayerIds: Set<number>) {
+    const matchPlayerIds = new Set(
+        Object.values(matches).flatMap(match =>
+            Object.values(match.players).map(player => player.id)
+        )
+    );
+
+    return new Set(
+        [...matchPlayerIds].filter(
+            playerId => !newPlayerIds.has(playerId)
         )
     );
 }

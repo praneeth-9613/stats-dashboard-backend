@@ -1,7 +1,8 @@
 export type ScrapePhase =
     "players"
     | "fixtures"
-    | "season_stats";
+    | "season_stats" 
+    | "academy_players";
 
 export interface ScrapeStatus {
     running: boolean;
@@ -16,9 +17,10 @@ export interface ScrapeStatus {
     message?: string;
 
     completed?: {
+        players: boolean;
         fixtures: boolean;
         season_stats: boolean;
-        players: boolean;
+        academy_players: boolean;
     };
 
     startedAt?: number;

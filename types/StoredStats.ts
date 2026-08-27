@@ -11,10 +11,16 @@ export interface StoredPlayerStats {
     name: string;
     isGoalkeeper: boolean;
     stats: Record<string, StoredStat>;
-    appearances?: number;
-    ratingSum?: number;
-    ratingMatches?: number;
-    averageRating?: number | null;
+}
+
+export interface StoredSeasonPlayerStats {
+    id: number;
+    name: string;
+    stats: Record<string, StoredStat>;
+    appearances: number;
+    ratingSum: number;
+    ratingMatches: number;
+    averageRating: number | null;
 }
 
 export interface StoredPOM {

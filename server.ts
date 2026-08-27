@@ -71,9 +71,10 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
     scrapeStatuses[teamId] = {
         running: true,
         completed: {
+            players: false,
             fixtures: false,
             season_stats: false,
-            players: false
+            academy_players: false
         }
     };
 

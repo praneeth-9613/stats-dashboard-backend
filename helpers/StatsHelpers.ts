@@ -2,7 +2,7 @@ import { GOALKEEPER_STAT_CONFIG, OUTFIELD_STAT_CONFIG } from "../constants";
 import { FotMobPlayer } from "../types/FotmobTypes";
 import { MatchDetailsResponse } from "../types/MatchDetails";
 import { PlayersDatabase } from "../types/StoredPlayer";
-import { MatchesDatabase, StoredPlayerStats, StoredStat } from "../types/StoredStats";
+import { MatchesDatabase, StoredMatch, StoredPlayerStats, StoredSeasonPlayerStats, StoredStat } from "../types/StoredStats";
 
 export function extractTeamSpecificPlayers(
     matchData: MatchDetailsResponse,
@@ -103,121 +103,120 @@ function extractPlayerStats(
     return extracted;
 }
 
+function initializeSeasonPlayer(playerId: string, playerName: string, players: Record<string, StoredSeasonPlayerStats>): void {
+    players[playerId] = {
+
+        id: Number(playerId),
+
+        name: playerName,
+
+        appearances: 0,
+
+        stats: {},
+
+        ratingSum: 0,
+
+        ratingMatches: 0,
+
+        averageRating: 0
+    }
+}
+
+function addStats(playerId: string, players: Record<string, StoredSeasonPlayerStats>, matchPlayer: StoredPlayerStats) {
+    const seasonPlayer =
+        players[playerId];
+
+    const minutes =
+        matchPlayer.stats.minutes_played?.value ?? 0;
+
+    if (minutes > 0) {
+        seasonPlayer.appearances++
+    }
+
+    for (
+        const [key, stat]
+        of Object.entries(matchPlayer.stats)
+    ) {
+
+        if (key === "rating_title") {
+            continue;
+        }
+
+        addStat(
+            seasonPlayer.stats,
+            key,
+            stat
+        );
+    }
+
+    const rating =
+        matchPlayer.stats.rating_title?.value;
+
+    if (
+        rating !== undefined &&
+        minutes > 0
+    ) {
+        seasonPlayer.ratingSum += rating;
+        seasonPlayer.ratingMatches++;
+    }
+}
+
+function initializeOrUpdateSeasonPlayer(playerId: string, playerName: string, matchPlayer: StoredPlayerStats, players: Record<string, StoredSeasonPlayerStats>) {
+    if (!players[playerId]) {
+        initializeSeasonPlayer(playerId, playerName, players);
+    }
+
+    addStats(playerId, players, matchPlayer);
+}
+
+function addStatsForSquadPlayers(players: Record<string, StoredSeasonPlayerStats>, squadPlayers: PlayersDatabase, match: StoredMatch) {
+    for (const player of Object.values(squadPlayers)) {
+
+        const playerId = String(player.id);
+
+        if (!(playerId in match.players)) {
+
+            if (players[playerId]) continue;
+
+            initializeSeasonPlayer(playerId, player.name, players);
+
+            continue;
+        };
+
+        const matchPlayer = match.players[playerId];
+
+        initializeOrUpdateSeasonPlayer(playerId, player.name, matchPlayer, players);
+    }
+}
+
+function addStatsForMatchPlayers(players: Record<string, StoredSeasonPlayerStats>, squadPlayers: PlayersDatabase, match: StoredMatch) {
+    const matchPlayers = Object.values(match.players);
+    
+    for (const matchPlayer of matchPlayers) {
+
+        const playerId = String(matchPlayer.id);
+
+        if (playerId in squadPlayers) continue; // already processed in squad loop
+
+        initializeOrUpdateSeasonPlayer(playerId, matchPlayer.name, matchPlayer, players);
+    }
+}
+
 export function calculateSeasonStats(
     matches: MatchesDatabase,
-    processedPlayers: PlayersDatabase
-): Record<string, StoredPlayerStats> {
+    squadPlayers: PlayersDatabase
+): Record<string, StoredSeasonPlayerStats> {
 
-    const players: Record<string, StoredPlayerStats> = {};
-
-    console.log(processedPlayers);
+    const players: Record<string, StoredSeasonPlayerStats> = {};
 
     for (const match of Object.values(matches)) {
 
-        for (const player of Object.values(processedPlayers)) {
+        addStatsForSquadPlayers(players, squadPlayers, match);
 
-            const playerId = String(player.id);
-
-            if (!(playerId in match.players)) {
-
-                if (players[playerId]) continue;
-
-                players[playerId] = {
-
-                    id: player.id,
-
-                    name: player.name,
-
-                    appearances: 0,
-
-                    isGoalkeeper: player.positions.map(pos => pos.label.toLowerCase()).includes("goalkeeper"),
-
-                    stats: {},
-
-                    ratingSum: 0,
-
-                    ratingMatches: 0,
-
-                    averageRating: 0
-                };
-
-                continue;
-            };
-
-            if (!players[playerId]) {
-
-                players[playerId] = {
-
-                    id: player.id,
-
-                    name: player.name,
-
-                    appearances: 0,
-
-                    isGoalkeeper: false,
-
-                    stats: {},
-
-                    ratingSum: 0,
-
-                    ratingMatches: 0,
-
-                    averageRating: 0
-                };
-            }
-
-            const seasonPlayer =
-                players[playerId];
-
-            const matchPlayer = match.players[playerId];
-
-            const minutes =
-                matchPlayer.stats.minutes_played?.value ?? 0;
-
-            if (minutes > 0) {
-                if (seasonPlayer.appearances) {
-                    seasonPlayer.appearances++
-                } else {
-                    seasonPlayer.appearances = 1;
-                }
-            }
-
-            for (
-                const [key, stat]
-                of Object.entries(matchPlayer.stats)
-            ) {
-
-                if (key === "rating_title") {
-                    continue;
-                }
-
-                addStat(
-                    seasonPlayer.stats,
-                    key,
-                    stat
-                );
-            }
-
-            const rating =
-                matchPlayer.stats.rating_title?.value;
-
-            if (
-                rating !== undefined &&
-                minutes > 0
-            ) {
-
-                if (seasonPlayer.ratingSum && seasonPlayer.ratingMatches) {
-                    seasonPlayer.ratingSum += rating;
-                    seasonPlayer.ratingMatches++;
-                } else {
-                    seasonPlayer.ratingSum = rating;
-                    seasonPlayer.ratingMatches = 1;
-                }
-            }
-        }
+        addStatsForMatchPlayers(players, squadPlayers, match);
     }
 
-    const result: Record<string, StoredPlayerStats> = {};
+    const result: Record<string, StoredSeasonPlayerStats> = {};
 
     for (
         const [playerId, player]
@@ -228,7 +227,7 @@ export function calculateSeasonStats(
             ...player,
 
             averageRating:
-                (player.ratingSum && player.ratingMatches && player.ratingMatches > 0)
+                (player.ratingMatches > 0)
                     ? Number(
 
                         (player.ratingSum /
