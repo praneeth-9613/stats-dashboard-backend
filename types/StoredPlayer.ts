@@ -17,3 +17,8 @@ export interface StoredPlayerData {
 
 export type PlayersDatabase =
     Record<string, StoredPlayerData>;
+
+export interface PlayersPhaseData {
+    final: PlayersDatabase,
+    cachedPlayerIds: Set<number>
+}

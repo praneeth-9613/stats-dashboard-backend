@@ -8,7 +8,7 @@ import { fetchJson, getDataDirectory, saveJson } from "./DirectoryHelpers";
 import { fetchPlayerData } from "./PlayerHelpers";
 import { calculateSeasonStats, extractTeamSpecificPlayers } from "./StatsHelpers";
 import { ScrapeStatus } from "../types/Common";
-import { updateProgress } from "../helper";
+import { sleep, updateEmptyProgress, updateProgress } from "../helper";
 
 export async function processMatches(completedFixtures: Fixture[], matches: MatchesDatabase, teamId: number, teamName: string, processedPlayers: PlayersDatabase, scrapeStatus: ScrapeStatus): Promise<void> {
     const MATCHES_FILE = path.join(getDataDirectory(teamId), "matches.json");
@@ -16,6 +16,12 @@ export async function processMatches(completedFixtures: Fixture[], matches: Matc
     const SEASON_FILE = path.join(getDataDirectory(teamId), "season-stats.json");
 
     let matchIndex = 0;
+
+    if (completedFixtures.length === 0) {
+        await updateEmptyProgress(scrapeStatus);
+
+        return;
+    }
 
     for (const fixture of completedFixtures) {
         try {
@@ -44,7 +50,7 @@ export async function processMatches(completedFixtures: Fixture[], matches: Matc
                 `✓ Saved match ${fixture.id}`
             );
 
-            await sleep(1500);
+            await sleep(1000);
 
         } catch (error) {
 
@@ -175,14 +181,20 @@ async function processMatch(
 
         goalscorers: extractGoalscorers(matchData?.header?.events ?? null),
 
-        isCompleted: fixture?.status?.finished === true
+        isCompleted: fixture?.status?.finished === true,
     };
 }
 
-export async function addMatches(newFixtures: Fixture[], matches: MatchesDatabase, teamId: number, scrapeStatus: ScrapeStatus): Promise<void> {
+export async function addMatches(newFixtures: Fixture[], matches: MatchesDatabase, teamId: number, scrapeStatus: ScrapeStatus): Promise<MatchesDatabase> {
     const MATCHES_FILE = path.join(getDataDirectory(teamId), "matches.json");
 
     let fixtureIndex = 0;
+
+    if (newFixtures.length === 0) {
+        await updateEmptyProgress(scrapeStatus);
+
+        return matches;
+    }
 
     for (const fixture of newFixtures) {
 
@@ -207,7 +219,7 @@ export async function addMatches(newFixtures: Fixture[], matches: MatchesDatabas
                 `✓ Saved match ${fixture.id}`
             );
 
-            await sleep(1500);
+            await sleep(1000);
 
         } catch (error) {
 
@@ -229,6 +241,8 @@ export async function addMatches(newFixtures: Fixture[], matches: MatchesDatabas
         `Matches added: ` +
         `${Object.keys(matches).length}`
     );
+
+    return matches;
 }
 
 async function addUpcomingMatch(fixture: Fixture): Promise<StoredMatch> {
@@ -359,6 +373,12 @@ export async function processPlayers(
 
     let playerIndex = 0;
 
+    if (newPlayerIds.size == 0) {
+        await updateEmptyProgress(scrapeStatus);
+
+        return players;
+    }
+
     for (const playerId of newPlayerIds) {
 
         updateProgress(scrapeStatus, ++playerIndex, `Processing player ${playerIndex} of ${newPlayerIds.size}`)
@@ -399,11 +419,4 @@ export async function processPlayers(
     );
 
     return players;
-}
-
-function sleep(ms: number): Promise<void> {
-
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
 }

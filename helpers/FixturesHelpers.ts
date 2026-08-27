@@ -69,18 +69,39 @@ export function getCompletedFixtures(
     );
 }
 
-export function getFixturesToProcess(completedFixtures: Fixture[], matches: MatchesDatabase, resync: boolean = false): Fixture[] {
-    return resync ? completedFixtures :
-        completedFixtures.filter(
-            fixture =>
-                !matches[String(fixture.id)]
-        );
+export function getFixturesToProcess(completedFixtures: Fixture[], matches: MatchesDatabase, refresh: boolean = false): Fixture[] {
+    if (refresh) {
+        return completedFixtures;
+    }
+
+    return completedFixtures.filter(
+        fixture => {
+            const cachedMatch = matches[String(fixture.id)]
+
+            if (!cachedMatch) {
+                return true;
+            }
+
+            return !cachedMatch.isCompleted;
+        }
+    );
 }
 
-export function getFixturesToAdd(seasonFixtures: Fixture[], completedFixtures: Fixture[], matches: MatchesDatabase, resync: boolean = false): Fixture[] {
-    return resync ? seasonFixtures :
-        seasonFixtures.filter(
-            fixture =>
-                !matches[String(fixture.id)] && !completedFixtures.find(completedFixture => completedFixture.id === fixture.id)
-        );
+export function getFixturesToAdd(seasonFixtures: Fixture[], completedFixtures: Fixture[], matches: MatchesDatabase, refresh: boolean = false): Fixture[] {
+    if (refresh) {
+        return seasonFixtures;
+    }
+    return seasonFixtures.filter(
+        fixture => {
+            const cachedMatch = matches[String(fixture.id)];
+
+            if (!cachedMatch) {
+                return true;
+            }
+
+            const completedMatch = completedFixtures.find(completedFixture => completedFixture.id === fixture.id);
+
+            return !completedMatch;
+        }
+    );
 }

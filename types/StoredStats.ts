@@ -1,4 +1,4 @@
-import { FixtureTeam } from "./FixtureTypes";
+import { Fixture, FixtureTeam } from "./FixtureTypes";
 import { InfoBoxStadium } from "./MatchDetails";
 
 export interface StoredStat {
@@ -77,7 +77,12 @@ export interface StoredMatch {
     goalscorers: StoredGoalscorers | null;
 
     isCompleted: boolean;
-
 }
 
 export type MatchesDatabase = Record<string, StoredMatch>;
+
+export interface MatchesPhaseData {
+    final: MatchesDatabase,
+    completedMatches: Fixture[]
+}
+

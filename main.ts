@@ -1,19 +1,19 @@
-import { Fixture } from "./types/FixtureTypes";
 import { ensureDataDirectory } from "./helpers/DirectoryHelpers";
-import { fetchSeasonFixtures, fetchTeamInfo, getCompletedFixtures, getFixturesToAdd, getFixturesToProcess } from "./helpers/FixturesHelpers";
-import { loadMatches, loadPlayers } from "./helpers/StorageHelpers";
-import { addMatches, processMatches, processPlayers } from "./helpers/ProcessHelpers";
-import { fetchSquadPlayers, findAcademyPlayersNotInSquad, getNewPlayerIds } from "./helpers/PlayerHelpers";
-import { ScraperOptions } from "./types/Common";
-import { completePhase, startPhase } from "./helper";
+import { fetchTeamInfo, } from "./helpers/FixturesHelpers";
+import { ScraperOptions, SyncContext } from "./types/Common";
+import { PlayersPhase } from "./PlayersPhase";
+import { FixturesPhase } from "./FixturesPhase";
+import { SeasonStatsPhase } from "./SeasonStatsPhase";
+import { AcademyPlayersPhase } from "./AcademyPlayersPhase";
 
 export async function main({
     teamId,
     teamName,
-    resync,
     playerIds,
     matchIds,
-    scrapeStatuses = {}
+    scrapeStatuses = {},
+    refresh = false,
+    scope = "all"
 }: ScraperOptions): Promise<void> {
 
     const scrapeStatus = scrapeStatuses[teamId];
@@ -28,132 +28,32 @@ export async function main({
     );
 
     console.log(
-        resync
-            ? "🔄 FULL RESYNC"
-            : "▶️ Normal sync"
+        refresh
+            ? scope === "all" ? "🔄 FULL REFRESH" : `🔄 REFRESH ${scope}`
+            : "▶️ SYNC NEW"
     );
 
     ensureDataDirectory(teamId);
 
     const teamInfo = await fetchTeamInfo(teamId);
 
-    const existingPlayers =
-        await loadPlayers(teamId);
-
-    console.log(
-        `Previously processed players: ` +
-        `${Object.keys(existingPlayers).length}`
-    );
-
-    const allPlayerIds: number[] = await fetchSquadPlayers(teamInfo);
-
-    const newPlayerIds: Set<number> =
-        getNewPlayerIds(
-            existingPlayers,
-            allPlayerIds,
-            resync
-        );
-
-    console.log(
-        `New players to process: ` +
-        `${newPlayerIds.size}`
-    );
-
-    startPhase(
-        scrapeStatus,
-        "players",
-        newPlayerIds.size,
-        newPlayerIds.size > 0 ? "Processing player profiles" : "No new players to process"
-    );
-
-    const processedPlayers = await processPlayers(
-        newPlayerIds,
-        existingPlayers,
+    const context: SyncContext = {
         teamId,
         teamName,
-        scrapeStatus
-    );
-
-    completePhase(scrapeStatus, "players");
-
-    const matches = loadMatches(teamId);
-
-    console.log(
-        `Previously processed matches: ` +
-        `${Object.keys(matches).length}`
-    );
-
-    const seasonFixtures: Fixture[] =
-        await fetchSeasonFixtures(teamInfo);
-
-    const completedFixtures: Fixture[] =
-        getCompletedFixtures(
-            seasonFixtures
-        );
-
-    const fixturesToAdd = getFixturesToAdd(seasonFixtures, completedFixtures, matches, resync);
-
-    console.log(
-        `New matches to add: ` +
-        `${fixturesToAdd.length}`
-    );
-
-    startPhase(
+        refresh,
+        scope,
         scrapeStatus,
-        "fixtures",
-        fixturesToAdd.length,
-        fixturesToAdd.length > 0 ? "Adding fixtures to schedule" : "No new fixtures to add to schedule"
-    );
+    };
 
-    await addMatches(fixturesToAdd, matches, teamId, scrapeStatus);
+    const playersPhase = new PlayersPhase(context)
+    const { final: players, cachedPlayerIds } = await playersPhase.run(teamInfo);
 
-    console.log(
-        `Completed season fixtures: ` +
-        `${completedFixtures.length}`
-    );
+    const fixturesPhase = new FixturesPhase(context)
+    const { final: matches, completedMatches } = await fixturesPhase.run(teamInfo);
 
-    completePhase(scrapeStatus, "fixtures");
+    const seasonStatsPhase = new SeasonStatsPhase(context);
+    await seasonStatsPhase.run(matches, completedMatches, players);
 
-    const newFixtures = getFixturesToProcess(completedFixtures, matches, resync);
-
-    console.log(
-        `New matches to process: ` +
-        `${newFixtures.length}`
-    );
-
-    startPhase(
-        scrapeStatus,
-        "season_stats",
-        newFixtures.length,
-        newFixtures.length > 0 ? "Computing season stats for completed matches" : "No new completed matches to process"
-    );
-
-    await processMatches(newFixtures, matches, teamId, teamName, processedPlayers, scrapeStatus);
-
-    completePhase(scrapeStatus, "season_stats");
-
-    const existingPlayerIds = new Set(Object.values(existingPlayers).map(existingPlayer => existingPlayer.id));
-    const academyPlayerIds = findAcademyPlayersNotInSquad(matches, resync ? newPlayerIds : existingPlayerIds);
-
-    console.log(
-        `Academy players to process: ` +
-        `${academyPlayerIds.size}`
-    );
-
-    startPhase(
-        scrapeStatus,
-        "academy_players",
-        academyPlayerIds.size,
-        academyPlayerIds.size > 0 ? "Processing academy player profiles" : "No new academy players to process"
-    );
-
-    await processPlayers(
-        academyPlayerIds,
-        existingPlayers,
-        teamId,
-        teamName,
-        scrapeStatus
-    );
-
-    completePhase(scrapeStatus, "academy_players");
+    const academyPlayersPhase = new AcademyPlayersPhase(context);
+    await academyPlayersPhase.run(matches, players, cachedPlayerIds);
 }

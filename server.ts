@@ -32,17 +32,17 @@ const scrapeStatuses: Record<number, ScrapeStatus> = {};
  * Normal:
  * POST /api/scrape
  *
- * Full resync:
- * POST /api/scrape?resync=true
+ * Full refresh:
+ * POST /api/scrape?refresh=true
  *
  * Specific players:
- * POST /api/scrape?resync=true&playerIds=123,456
+ * POST /api/scrape?refresh=true&playerIds=123,456
  *
  * Specific matches:
- * POST /api/scrape?resync=true&matchIds=5898653,5898654
+ * POST /api/scrape?refresh=true&matchIds=5898653,5898654
  *
  * Both:
- * POST /api/scrape?resync=true&playerIds=123,456&matchIds=5898653,5898654
+ * POST /api/scrape?refresh=true&playerIds=123,456&matchIds=5898653,5898654
  */
 app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
 
@@ -58,7 +58,9 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
 
         return;
     }
-    const resync = (req?.query?.resync === "true")
+    const refresh = (req?.query?.refresh === "true")
+
+    const scope = req?.query?.scope || "all"
 
     const playerIds = parseIds(
         req.query.playerIds
@@ -80,7 +82,8 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
 
 
     const options: ScraperOptions = {
-        resync,
+        refresh,
+        scope,
         playerIds,
         matchIds,
         teamId,
@@ -124,7 +127,7 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
 
     res.json({
         started: true,
-        resync,
+        refresh,
         playerIds,
         matchIds,
     });

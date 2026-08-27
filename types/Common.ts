@@ -1,7 +1,7 @@
 export type ScrapePhase =
     "players"
     | "fixtures"
-    | "season_stats" 
+    | "season_stats"
     | "academy_players";
 
 export interface ScrapeStatus {
@@ -30,10 +30,21 @@ export interface ScrapeStatus {
 }
 
 export interface ScraperOptions {
-    resync?: boolean;
+    refresh?: boolean;
+    scope?: RefreshScope
     playerIds?: number[];
     matchIds?: number[];
     teamId: number;
     teamName: string;
     scrapeStatuses?: Record<number, ScrapeStatus>
+}
+
+export type RefreshScope = "all" | "players" | "fixtures";
+
+export interface SyncContext {
+    teamId: number;
+    teamName: string;
+    refresh: boolean;
+    scope: RefreshScope;
+    scrapeStatus: ScrapeStatus;
 }

@@ -29,6 +29,7 @@ export function startPhase(
     status.total = total;
     status.percent = 0;
     status.message = message;
+    status.startedAt = Date.now();
 }
 
 export function updateProgress(
@@ -50,6 +51,16 @@ export function updateProgress(
     }
 }
 
+export async function updateEmptyProgress(
+    status: ScrapeStatus
+) {
+    status.current = 0;
+
+    status.percent = 100;
+
+    await sleep(1000);
+}
+
 export function completePhase(
     status: ScrapeStatus,
     phase: ScrapePhase
@@ -60,4 +71,11 @@ export function completePhase(
     if (status.completed) {
         status.completed[phase] = true;
     }
+}
+
+export function sleep(ms: number): Promise<void> {
+
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
 }

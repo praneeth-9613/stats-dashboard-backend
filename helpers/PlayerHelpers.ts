@@ -6,8 +6,8 @@ import { MatchesDatabase } from "../types/StoredStats";
 import { TeamResponse } from "../types/Team";
 import { fetchJson } from "./DirectoryHelpers";
 
-export async function fetchSquadPlayers(teamInfo: TeamResponse): Promise<number[]> {
-    return teamInfo?.squad?.squad?.filter(sq => sq.title.toLowerCase() !== "coach").map(sq => sq.members.map(member => member.id).flat()).flat() ?? [];
+export async function fetchSquadPlayers(teamInfo: TeamResponse): Promise<Set<number>> {
+    return new Set(teamInfo?.squad?.squad?.filter(sq => sq.title.toLowerCase() !== "coach").map(sq => sq.members.map(member => member.id).flat()).flat() ?? []);
 }
 
 export async function fetchPlayerData(
@@ -37,7 +37,7 @@ function extractPlayerData(
         birthDate:
             data.birthDate ?? null,
 
-        positions: data.positionDescription.positions.map((position) => { return { ...position.strPosShort, isMainPosition: position.isMainPosition } }) ?? null,
+        positions: data.positionDescription.positions?.map((position) => { return { ...position.strPosShort, isMainPosition: position.isMainPosition } }) ?? null,
 
         playerInformation:
             extractPlayerInformation(data.playerInformation),
@@ -89,22 +89,12 @@ function extractInjuryInformation(fotmobPlayerInjuryInformation: FotmobPlayerInj
 }
 
 export function getNewPlayerIds(
-    existingPlayers: PlayersDatabase,
-    allPlayerIds: number[],
-    resync: boolean = false
+    cachedPlayerIds: Set<number>,
+    allPlayerIds: Set<number>
 ): Set<number> {
-
-    if (resync) {
-        return new Set(allPlayerIds);
-    }
-
-    const existingPlayerIds = new Set(
-        Object.values(existingPlayers).map(player => player.id)
-    );
-
     return new Set(
-        allPlayerIds.filter(
-            playerId => !existingPlayerIds.has(playerId)
+        Array.from(allPlayerIds).filter(
+            playerId => !cachedPlayerIds.has(playerId)
         )
     );
 }

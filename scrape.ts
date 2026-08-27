@@ -16,7 +16,7 @@ const teamId = Number(getArgValue("--teamId") || 0);
 main({
     teamId,
     teamName,
-    resync: getArgValue("--resync") === "true",
+    refresh: getArgValue("--refresh") === "true",
     playerIds: [],
     matchIds: [],    
 }).catch((error) => {
