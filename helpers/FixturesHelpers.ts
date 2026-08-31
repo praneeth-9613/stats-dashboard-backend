@@ -1,6 +1,6 @@
 import { Fixture } from "../types/FixtureTypes";
 import { MatchesDatabase } from "../types/StoredStats";
-import { TeamResponse } from "../types/Team";
+import { TeamResponse } from "../api/types/RawTeam";
 import { fetchJson } from "./DirectoryHelpers";
 
 export async function fetchTeamInfo(teamId: number): Promise<TeamResponse> {

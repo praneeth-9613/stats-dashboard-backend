@@ -89,6 +89,10 @@ export const FOTMOB_MATCH_API_URL = "https://www.fotmob.com/api/data/matchDetail
 export const FOTMOB_PLAYER_API_URL =
     "https://www.fotmob.com/api/data/playerData?id=";
 
-export const TEAMS : Record<number, string> = {
+export const TEAMS: Record<number, string> = {
     9825: "Arsenal"
+}
+
+export const LEAGUES: Record<number, string> = {
+    47: "Premier League"
 }

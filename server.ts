@@ -1,13 +1,21 @@
+import "reflect-metadata";
 import express from "express";
 import { main } from "./main";
 import { ScraperOptions, ScrapeStatus } from "./types/Common";
 import { readJsonFile } from "./helper";
+import { AppDataSource } from "./persistence/data-source";
 
 const app = express();
 
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
+
+await AppDataSource.initialize();
+
+console.log("Database connected");
+
+await AppDataSource.destroy();
 
 function parseIds(value: unknown): number[] {
     if (typeof value !== "string" || !value.trim()) {
@@ -60,6 +68,9 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
     }
     const refresh = (req?.query?.refresh === "true")
 
+    const leagueId = req?.query?.leagueId || 47;
+    const season = req?.query?.season || "2026-2027";
+
     const scope = req?.query?.scope || "all"
 
     const playerIds = parseIds(
@@ -88,7 +99,9 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
         matchIds,
         teamId,
         teamName,
-        scrapeStatuses
+        scrapeStatuses,
+        leagueId,
+        season,
     };
 
     console.log("Starting scraper:");

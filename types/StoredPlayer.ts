@@ -1,5 +1,5 @@
 import { FotMobDate } from "./FotmobTypes";
-import { InjuryInformation, PlayerInformation, PlayerPosition } from "./PlayerInformationTypes";
+import { InjuryInformation, PlayerInformation } from "./PlayerInformationTypes";
 
 export interface StoredPlayerData {
     id: number;

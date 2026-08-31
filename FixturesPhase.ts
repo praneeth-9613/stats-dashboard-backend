@@ -1,54 +1,144 @@
-import { fetchSeasonFixtures, getCompletedFixtures, getFixturesToAdd } from "./helpers/FixturesHelpers";
-import { addMatches } from "./helpers/ProcessHelpers";
-import { loadMatches } from "./helpers/StorageHelpers";
 import { SyncPhase } from "./SyncPhase";
-import { Fixture } from "./types/FixtureTypes";
-import { MatchesPhaseData } from "./types/StoredStats";
-import { TeamResponse } from "./types/Team";
+import { TeamResponse } from "./api/types/RawTeam";
+import { SyncContext } from "./types/Common";
+import { fetchFixtures } from "./helpers/ApiHelpers";
+import { FixtureRepository } from "./persistence/repositories/FixtureRepository";
+import { FixtureMapper } from "./application/mappers/FixtureMapper";
+import { FixtureData } from "./application/types/FixtureData";
+import { updateProgress } from "./helper";
+import { Fixture } from "./persistence/entities/Fixture";
+import { FixtureAuditAction } from "./persistence/entities/FixtureAudit";
+import { FixturesPhaseOutput } from "./application/types/PhaseOutput";
+import { FixtureEntityMapper } from "./persistence/mappers/FixtureEntityMapper";
+import { FixtureAuditRepository } from "./persistence/repositories/FixtureAuditRepository";
 
 export class FixturesPhase extends SyncPhase {
 
-    async run(teamInfo: TeamResponse): Promise<MatchesPhaseData> {
+    private phaseTotal = 0;
+
+    constructor(protected context: SyncContext, private readonly teamResponse: TeamResponse, private readonly fixtureMapper: FixtureMapper, private readonly fixtureEntityMapper: FixtureEntityMapper, private readonly fixtureRepository: FixtureRepository, private readonly fixtureAuditRepository: FixtureAuditRepository) { super(context); }
+
+    async run(teamInfo: TeamResponse): Promise<FixturesPhaseOutput> {
         const {
             teamId,
+            season,
             refresh,
             scrapeStatus
         } = this.context;
 
-        const cachedMatches = loadMatches(teamId);
+        // API Data
+        const latestFixtures = await fetchFixtures(this.teamResponse);
 
-        console.log(
-            `Previously processed matches: ` +
-            `${Object.keys(cachedMatches).length}`
+        const latestFixtureData = this.fixtureMapper.toFixtureData(latestFixtures, season, teamId);
+
+        // DB Data
+        const storedFixtures = await this.fixtureRepository.findByTeamForSeason(season, teamId);
+
+        // Discover new / rescheduled fixtures
+        const latestFixturesById = new Map(
+            latestFixtureData.map(fixture => [fixture.matchId, fixture]),
+        );
+        const storedFixtureIds = new Set(
+            storedFixtures.map(fixture => fixture.matchId)
         );
 
-        const seasonFixtures: Fixture[] =
-            await fetchSeasonFixtures(teamInfo);
+        const fixturesAdded = latestFixtureData.filter(
+            fixture => !storedFixtureIds.has(fixture.matchId)
+        );
 
-        const completedFixtures: Fixture[] =
-            getCompletedFixtures(
-                seasonFixtures
+        const fixturesRescheduled = storedFixtures.filter(
+            storedFixture => {
+                const latestFixture =
+                    latestFixturesById.get(storedFixture.matchId);
+
+                return (
+                    latestFixture !== undefined &&
+                    (new Date(latestFixture.fixtureDate).getTime() !==
+                        storedFixture.fixtureDate.getTime())
+                );
+            }
+        );
+
+        const fixturesToProcess = fixturesAdded.filter(fixture => fixture.completed).map(fixture => fixture.matchId);
+
+        this.phaseTotal = [...fixturesAdded, ...fixturesRescheduled].length;
+
+        await this.execute(
+            "fixtures",
+            this.phaseTotal,
+            this.phaseTotal > 0
+                ? "Processing fixtures"
+                : "No fixtues to process",
+            () =>
+                this.work(
+                    fixturesAdded,
+                    fixturesRescheduled,
+                ),
+        );
+
+        // Outputs
+        return { fixturesToProcess }
+    }
+
+    private async work(
+        fixturesAdded: FixtureData[],
+        fixturesRescheduled: Fixture[],
+    ): Promise<void> {
+        const { scrapeStatus } = this.context;
+
+        if (fixturesAdded.length > 0) {
+            await this.addFixtures(
+                fixturesAdded,
             );
+        }
 
-        console.log(
-            `Completed season fixtures: ` +
-            `${completedFixtures.length}`
+        if (fixturesRescheduled.length > 0) {
+            await this.updateFixtures(
+                fixturesRescheduled,
+            );
+        }
+
+        updateProgress(
+            scrapeStatus,
+            this.phaseTotal,
+            `Processed ${this.phaseTotal} fixtures)`,
+        );
+    }
+
+    private async addFixtures(
+        fixturesAdded: FixtureData[],
+    ): Promise<void> {
+        const entities = fixturesAdded.map(fixture =>
+            this.fixtureEntityMapper.toEntity(
+                fixture
+            ),
         );
 
-        const fixturesToAdd = getFixturesToAdd(seasonFixtures, completedFixtures, cachedMatches, refresh);
-
-        console.log(
-            `New matches to add: ` +
-            `${fixturesToAdd.length}`
+        const audits = entities.map(entity =>
+            this.fixtureEntityMapper.toFixtureAuditEntity(
+                entity,
+                FixtureAuditAction.NEW,
+            ),
         );
 
-        const matches = await this.execute("fixtures",
-            fixturesToAdd.length,
-            fixturesToAdd.length > 0 ? "Adding fixtures to schedule" : "No new fixtures to add to schedule", 
-            () => addMatches(fixturesToAdd, cachedMatches, teamId, scrapeStatus)
-        )
+        await this.fixtureRepository.saveAll(entities);
+        await this.fixtureAuditRepository.saveAll(audits);
+    }
 
-        return { final: matches, completedMatches: completedFixtures };
+    private async updateFixtures(
+        fixturesRescheduled: Fixture[],
+    ): Promise<void> {
+        const entities = fixturesRescheduled;
+
+        const audits = entities.map(entity =>
+            this.fixtureEntityMapper.toFixtureAuditEntity(
+                entity,
+                FixtureAuditAction.MARKED_FOR_PROCESSING,
+            ),
+        );
+
+        await this.fixtureRepository.saveAll(entities);
+        await this.fixtureAuditRepository.saveAll(audits);
     }
 }
 

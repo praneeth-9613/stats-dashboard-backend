@@ -13,7 +13,9 @@ export async function main({
     matchIds,
     scrapeStatuses = {},
     refresh = false,
-    scope = "all"
+    scope = "all",
+    leagueId,
+    season
 }: ScraperOptions): Promise<void> {
 
     const scrapeStatus = scrapeStatuses[teamId];
@@ -43,17 +45,19 @@ export async function main({
         refresh,
         scope,
         scrapeStatus,
+        leagueId,
+        season
     };
 
-    const playersPhase = new PlayersPhase(context)
-    const { final: players, cachedPlayerIds } = await playersPhase.run(teamInfo);
+    // const playersPhase = new PlayersPhase(context)
+    // const { final: players, cachedPlayerIds } = await playersPhase.run(teamInfo);
 
-    const fixturesPhase = new FixturesPhase(context)
-    const { final: matches, completedMatches } = await fixturesPhase.run(teamInfo);
+    // const fixturesPhase = new FixturesPhase(context)
+    // const { final: matches, completedMatches } = await fixturesPhase.run(teamInfo);
 
-    const seasonStatsPhase = new SeasonStatsPhase(context);
-    await seasonStatsPhase.run(matches, completedMatches, players);
+    // const seasonStatsPhase = new SeasonStatsPhase(context);
+    // await seasonStatsPhase.run(matches, completedMatches, players);
 
-    const academyPlayersPhase = new AcademyPlayersPhase(context);
-    await academyPlayersPhase.run(matches, players, cachedPlayerIds);
+    // const academyPlayersPhase = new AcademyPlayersPhase(context);
+    // await academyPlayersPhase.run(matches, players, cachedPlayerIds);
 }

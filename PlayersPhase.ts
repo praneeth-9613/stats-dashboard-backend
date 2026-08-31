@@ -1,56 +1,316 @@
-import { fetchSquadPlayers, getNewPlayerIds } from "./helpers/PlayerHelpers";
-import { processPlayers } from "./helpers/ProcessHelpers";
-import { loadPlayers } from "./helpers/StorageHelpers";
 import { SyncPhase } from "./SyncPhase";
-import { PlayersPhaseData } from "./types/StoredPlayer";
-import { TeamResponse } from "./types/Team";
+import { PlayerPhaseInput } from "./application/types/PhaseInput";
+import { fetchPlayer } from "./helpers/ApiHelpers";
+import { ScrapeStatus, SyncContext } from "./types/Common";
+import { PlayerMapper } from "./application/mappers/PlayerMapper";
+import { PlayerRepository } from "./persistence/repositories/PlayerRepository";
+import { PlayerEntityMapper } from "./persistence/mappers/PlayerEntityMapper";
+import { PlayerTeamRepository } from "./persistence/repositories/PlayerTeamRepository";
+import { PlayerTeam, TeamStatus } from "./persistence/entities/PlayerTeam";
+import { PlayerTeamComparator } from "./PlayerTeamComparator";
+import { PlayerTeamAuditRepository } from "./persistence/repositories/PlayerTeamAuditRepository";
+import { PlayerTeamAudit } from "./persistence/entities/PlayerTeamAudit";
+import { PlayerComparator } from "./PlayerComparator";
+import { PlayerAudit } from "./persistence/entities/PlayerAudit";
+import { PlayerAuditRepository } from "./persistence/repositories/PlayerAuditRepository";
+import { PlayerData, PlayerTeamData } from "./application/types/PlayerData";
+import { Player } from "./persistence/entities/Player";
+import { updateEmptyProgress, updateProgress } from "./helper";
 
 export class PlayersPhase extends SyncPhase {
 
-    async run(teamInfo: TeamResponse): Promise<PlayersPhaseData> {
+    private phaseTotal = 0;
+
+    constructor(protected context: SyncContext, private readonly playerPhaseInput: PlayerPhaseInput, private readonly playerMapper: PlayerMapper, private readonly playerEntityMapper: PlayerEntityMapper, private readonly playerRepository: PlayerRepository, private readonly playerTeamRepository: PlayerTeamRepository, private readonly playerAuditRepository: PlayerAuditRepository, private readonly playerTeamAuditRepository: PlayerTeamAuditRepository, private readonly playerComparator: PlayerComparator, private readonly playerTeamComparator: PlayerTeamComparator) {
+        super(context);
+
         const {
-            teamId,
-            teamName,
-            refresh,
-            scrapeStatus
-        } = this.context;
+            playersToInsert,
+            playersToCheck,
+            playersToRemove
+        } = this.playerPhaseInput;
+        this.phaseTotal = [...playersToInsert, ...playersToCheck, ...playersToRemove].length;
+    }
 
-        const cachedPlayers = await loadPlayers(teamId);
+    async run(): Promise<void> {
+        console.log(`Players to process: ${this.phaseTotal}`);
 
-        console.log(
-            `Previously cached players: ${Object.keys(cachedPlayers).length}`
-        );
-
-        let cachedPlayerIds = new Set(Object.values(cachedPlayers).map(cachedPlayer => cachedPlayer.id));
-        let allPlayerIds = cachedPlayerIds;
-        if (refresh) {
-            allPlayerIds = await fetchSquadPlayers(teamInfo);
-            cachedPlayerIds = new Set();
-        }
-
-        const newPlayerIds = getNewPlayerIds(
-            cachedPlayerIds,
-            allPlayerIds
-        );
-
-        console.log(`Players to process: ${newPlayerIds.size}`);
-
-        const players = await this.execute(
+        await this.execute(
             "players",
-            newPlayerIds.size,
-            newPlayerIds.size > 0
-                ? "Processing player profiles"
+            this.phaseTotal,
+            this.phaseTotal > 0
+                ? "Processing players"
                 : "No new players to process",
             () =>
-                processPlayers(
-                    newPlayerIds,
-                    cachedPlayers,
-                    teamId,
-                    teamName,
-                    scrapeStatus
+                this.work(
                 )
         );
-
-        return { final: players, cachedPlayerIds: cachedPlayerIds};
     }
+
+    private async work() {
+        const {
+            scrapeStatus
+        } = this.context;
+        const { playersToInsert, playersToCheck, playersToRemove } = this.playerPhaseInput;
+
+        if (this.phaseTotal === 0) {
+            updateEmptyProgress(scrapeStatus);
+
+            return;
+        }
+        let playerIndex = 0;
+
+        for (const playerId of playersToInsert) {
+            await this.processPlayer(playerId, "insert");
+
+            this.updatePlayerProgress(scrapeStatus, ++playerIndex);
+        }
+
+        for (const playerId of playersToCheck) {
+            await this.processPlayer(playerId, "check");
+
+            this.updatePlayerProgress(scrapeStatus, ++playerIndex);
+        }
+
+        for (const playerId of playersToRemove) {
+            await this.processPlayerRemoval(playerId);
+
+            this.updatePlayerProgress(scrapeStatus, ++playerIndex);
+        }
+    }
+
+    private updatePlayerProgress(
+        scrapeStatus: ScrapeStatus,
+        playerIndex: number,
+    ) {
+        updateProgress(
+            scrapeStatus,
+            playerIndex,
+            `Processing player ${playerIndex} of ${this.phaseTotal}`,
+        );
+    }
+
+    private async processPlayer(playerId: number, type: "insert" | "check") {
+        // API Data
+        const latestPlayer = await fetchPlayer(playerId);
+        const latestPlayerData = this.playerMapper.toPlayerData(latestPlayer);
+
+        // DB Data
+        const storedPlayer =
+            await this.playerRepository.findByPlayerId(playerId);
+
+        await this.processPlayerProfile(
+            playerId,
+            latestPlayerData,
+            storedPlayer,
+        );
+
+        if (type === "insert") {
+            const storedPlayerTeam =
+                await this.playerTeamRepository.findByTeamForSeason(
+                    this.playerPhaseInput,
+                    playerId,
+                );
+
+            await this.processPlayerTeam(
+                playerId,
+                latestPlayerData.team,
+                storedPlayerTeam,
+            );
+        }
+    }
+
+    private async processPlayerRemoval(playerId: number) {
+        const storedPlayerTeam =
+            await this.playerTeamRepository.findByTeamForSeason(
+                this.playerPhaseInput,
+                playerId,
+            );
+
+        if (storedPlayerTeam === null) {
+            return;
+        }
+
+        const oldStatus = storedPlayerTeam.teamStatus;
+
+        storedPlayerTeam.teamStatus = TeamStatus.NOT_IN_SQUAD;
+
+        await this.playerTeamRepository.save(storedPlayerTeam);
+
+        await this.playerTeamAuditRepository.save(
+            this.playerEntityMapper.toPlayerTeamAuditEntity(
+                this.playerPhaseInput,
+                playerId,
+                "teamStatus",
+                oldStatus,
+                TeamStatus.NOT_IN_SQUAD,
+            ),
+        );
+    }
+
+    private async processPlayerProfile(
+        playerId: number,
+        latestPlayerData: PlayerData,
+        storedPlayer: Player | null,
+    ) {
+        if (storedPlayer === null) {
+            const player = this.playerEntityMapper.toPlayerEntity(
+                latestPlayerData.profile,
+                latestPlayerData.positions.list,
+                latestPlayerData.injury,
+            );
+
+            await this.playerRepository.save(player);
+
+            return;
+        }
+
+        const changedFields =
+            this.playerComparator.getChangedFields(
+                latestPlayerData,
+                storedPlayer,
+            );
+
+        if (changedFields.length === 0) {
+            return;
+        }
+
+        const audits: PlayerAudit[] = [];
+
+        for (const { field, oldValue, newValue } of changedFields) {
+            storedPlayer[field] = newValue as never;
+
+            audits.push(
+                this.playerEntityMapper.toPlayerAuditEntity(
+                    playerId,
+                    field,
+                    oldValue,
+                    newValue,
+                ),
+            );
+        }
+
+        await this.playerRepository.save(storedPlayer);
+        await this.playerAuditRepository.saveAll(audits);
+    }
+
+    private async processPlayerTeam(
+        playerId: number,
+        latestPlayerTeam: PlayerTeamData | null,
+        storedPlayerTeam: PlayerTeam | null,
+    ) {
+        if (storedPlayerTeam === null) {
+            await this.createPlayerTeam(playerId, latestPlayerTeam);
+            return;
+        }
+
+        if (latestPlayerTeam === null) {
+            await this.markPlayerAsFreeAgent(storedPlayerTeam);
+            return;
+        }
+
+        if (latestPlayerTeam.teamId !== storedPlayerTeam.teamId) {
+            await this.handleTeamChange(
+                playerId,
+                latestPlayerTeam,
+                storedPlayerTeam,
+            );
+            return;
+        }
+    }
+
+    private async createPlayerTeam(
+        playerId: number,
+        latestPlayerTeam: PlayerTeamData | null,
+    ) {
+        if (latestPlayerTeam === null) {
+            return;
+        }
+
+        const entity =
+            this.playerEntityMapper.toPlayerTeamEntity(
+                playerId,
+                latestPlayerTeam,
+            );
+
+        await this.playerTeamRepository.save(entity);
+    }
+
+    private async markPlayerAsFreeAgent(
+        storedPlayerTeam: PlayerTeam,
+    ) {
+        const oldTeamStatus = storedPlayerTeam.teamStatus;
+
+        storedPlayerTeam.teamStatus = TeamStatus.FREE_AGENT;
+
+        const audit =
+            this.playerEntityMapper.toPlayerTeamAuditEntity(
+                this.playerPhaseInput,
+                storedPlayerTeam.playerId,
+                "teamStatus",
+                oldTeamStatus,
+                TeamStatus.FREE_AGENT,
+            );
+
+        await this.playerTeamRepository.save(storedPlayerTeam);
+        await this.playerTeamAuditRepository.save(audit);
+    }
+
+    private async handleTeamChange(
+        playerId: number,
+        latestPlayerTeam: PlayerTeamData,
+        storedPlayerTeam: PlayerTeam,
+    ) {
+        const changedFields =
+            this.playerTeamComparator.getChangedFields(
+                latestPlayerTeam,
+                storedPlayerTeam,
+            );
+
+        const audits: PlayerTeamAudit[] = [];
+
+        for (const { field, oldValue, newValue } of changedFields) {
+            storedPlayerTeam[field] = newValue as never;
+
+            audits.push(
+                this.playerEntityMapper.toPlayerTeamAuditEntity(
+                    this.playerPhaseInput,
+                    playerId,
+                    field,
+                    oldValue,
+                    newValue,
+                ),
+            );
+        }
+
+        const oldTeamStatus = storedPlayerTeam.teamStatus;
+
+        storedPlayerTeam.teamStatus = TeamStatus.TRANSFERRED_OUT;
+
+        audits.push(
+            this.playerEntityMapper.toPlayerTeamAuditEntity(
+                this.playerPhaseInput,
+                playerId,
+                "teamStatus",
+                oldTeamStatus,
+                TeamStatus.TRANSFERRED_OUT,
+            ),
+        );
+
+        await this.playerTeamRepository.save(storedPlayerTeam);
+
+        if (audits.length > 0) {
+            await this.playerTeamAuditRepository.saveAll(audits);
+        }
+
+        const latestPlayerTeamEntity =
+            this.playerEntityMapper.toPlayerTeamEntity(
+                playerId,
+                latestPlayerTeam,
+            );
+
+        await this.playerTeamRepository.save(latestPlayerTeamEntity);
+    }
+
 }
+
