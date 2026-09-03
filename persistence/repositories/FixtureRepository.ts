@@ -10,6 +10,10 @@ export class FixtureRepository {
         return this.repository.findBy({ season, teamId });
     }
 
+    async findByMatchId(matchId: number): Promise<Fixture | null> {
+        return this.repository.findOneBy({ matchId });
+    }
+
     async save(fixture: Fixture): Promise<Fixture> {
         return this.repository.save(fixture);
     }

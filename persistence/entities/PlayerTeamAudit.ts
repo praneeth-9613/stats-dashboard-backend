@@ -1,5 +1,5 @@
 import { Column, Entity } from "typeorm";
-import { BasePlayerAudit } from "../../BasePlayerAudit";
+import { BasePlayerAudit } from "../BasePlayerAudit";
 
 @Entity("playerTeamAudit")
 export class PlayerTeamAudit extends BasePlayerAudit {

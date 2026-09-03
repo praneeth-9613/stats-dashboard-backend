@@ -10,7 +10,7 @@ export interface FixtureTournament {
     leagueId: number;
 }
 
-export interface FixtureStatus {
+export interface FixtureStatusResponse {
     utcTime: string;
     finished: boolean;
     started: boolean;
@@ -35,7 +35,7 @@ export interface FixtureResponse {
 
     tournament: FixtureTournament;
 
-    status: FixtureStatus;
+    status: FixtureStatusResponse;
 
     notStarted: boolean;
 }

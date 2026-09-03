@@ -1,6 +1,8 @@
+import { injectable } from "tsyringe";
 import { SquadMemberResponse } from "../../api/types/RawTeam";
 import { SquadData } from "../types/SquadData";
 
+@injectable()
 export class SquadMapper {
 
     toSquadData(squadMemberResponse: SquadMemberResponse[]): SquadData[] {

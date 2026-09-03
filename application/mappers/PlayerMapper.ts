@@ -1,6 +1,8 @@
+import { injectable } from "tsyringe";
 import { PlayerInformationResponse, PlayerInjuryInformationResponse, PlayerResponse } from "../../api/types/RawPlayer"
 import { PLAYER_INFORMATION_MAP, PlayerData, PlayerInjuryInformation, PlayerProfile, PlayerTeamData } from "../types/PlayerData"
 
+@injectable()
 export class PlayerMapper {
 
     toPlayerData(playerResponse: PlayerResponse): PlayerData {

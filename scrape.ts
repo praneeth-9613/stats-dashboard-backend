@@ -1,16 +1,10 @@
-import { getArgValue } from "./helper";
-import {  main } from "./main";
+import "reflect-metadata";
+import { container } from "./container"
+import { Scraper } from "./Scraper";
+import { AppDataSource } from "./persistence/data-source";
 
-const teamName = getArgValue("--teamName") || "";
-const teamId = Number(getArgValue("--teamId") || 0);
+await AppDataSource.initialize()
 
-main({
-    teamId,
-    teamName,
-    refresh: getArgValue("--refresh") === "true",
-    playerIds: [],
-    matchIds: [],    
-}).catch((error) => {
-    console.error(error);
-    process.exit(1);
-});
+const scraper = container.resolve(Scraper);
+
+await scraper.run();

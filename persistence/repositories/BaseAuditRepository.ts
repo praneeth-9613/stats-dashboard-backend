@@ -1,5 +1,5 @@
 import { Repository } from "typeorm";
-import { BaseAudit } from "../../BaseAudit";
+import { BaseAudit } from "../BaseAudit";
 
 export abstract class BaseAuditRepository<T extends BaseAudit> {
     constructor(

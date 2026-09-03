@@ -5,6 +5,13 @@ import {
     UpdateDateColumn,
 } from "typeorm";
 
+export enum FixtureStatus {
+    NEW = "NEW",
+    MARKED_FOR_PROCESSING = "MARKED_FOR_PROCESSING",
+    RESCHEDULED = "RESCHEDULED",
+    PROCESSED = "PROCESSED",
+}
+
 @Entity("fixture")
 export class Fixture {
     @PrimaryColumn({ type: "integer" })
@@ -45,6 +52,21 @@ export class Fixture {
 
     @Column({ type: "boolean", default: false })
     isPenaltyShootout!: boolean;
+
+    @Column({
+        type: "enum",
+        enum: FixtureStatus,
+    })
+    fixtureStatus!: FixtureStatus;
+
+    @Column({ type: "varchar", nullable: true })
+    stadiumName!: string | null;
+
+    @Column({ type: "varchar", nullable: true })
+    stadiumCity!: string | null;
+
+    @Column({ type: "varchar", nullable: true })
+    stadiumCountry!: string | null;
 
     @UpdateDateColumn()
     updatedAt!: Date;

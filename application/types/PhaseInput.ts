@@ -1,4 +1,4 @@
-import { SquadPhaseOutput } from "./PhaseOutput";
+import { FixturesPhaseOutput, SquadPhaseOutput } from "./PhaseOutput";
 
 export interface SquadPhaseInput {
     season: string;
@@ -10,3 +10,5 @@ export interface PlayerPhaseInput extends SquadPhaseOutput {
     season: string;
     teamId: number;
 }
+
+export interface MatchProcessingPhaseInput extends FixturesPhaseOutput { }

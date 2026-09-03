@@ -1,9 +1,13 @@
 import { Repository } from "typeorm";
 import { Squad } from "../entities/Squad";
 import { SquadPhaseInput } from "../../application/types/PhaseInput";
+import { inject, injectable } from "tsyringe";
+import { TOKENS } from "../../tokens";
 
+@injectable()
 export class SquadRepository {
     constructor(
+         @inject(TOKENS.SquadOrmRepository)
         private readonly repository: Repository<Squad>
     ) { }
 

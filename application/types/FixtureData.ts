@@ -1,8 +1,8 @@
 export interface FixtureData {
     matchId: number;
-    
+
     season: string;
-    
+
     teamId: number;
 
     opponent: string;

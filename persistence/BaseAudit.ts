@@ -1,11 +1,12 @@
 import {
-    Column
+    Column,
+    CreateDateColumn,
+    PrimaryGeneratedColumn,
 } from "typeorm";
-import { BaseAudit } from "./BaseAudit";
 
-export abstract class BasePlayerAudit extends BaseAudit {
-    @Column({ type: "integer" })
-    playerId!: number;
+export abstract class BaseAudit {
+    @PrimaryGeneratedColumn()
+    id!: number;
 
     @Column({ type: "varchar" })
     field!: string;
@@ -15,4 +16,7 @@ export abstract class BasePlayerAudit extends BaseAudit {
 
     @Column({ type: "jsonb", nullable: true })
     newValue!: unknown;
+
+    @CreateDateColumn()
+    createdAt!: Date;
 }

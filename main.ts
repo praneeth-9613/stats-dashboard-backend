@@ -1,24 +1,16 @@
 import { ensureDataDirectory } from "./helpers/DirectoryHelpers";
-import { fetchTeamInfo, } from "./helpers/FixturesHelpers";
-import { ScraperOptions, SyncContext } from "./types/Common";
-import { PlayersPhase } from "./PlayersPhase";
-import { FixturesPhase } from "./FixturesPhase";
-import { SeasonStatsPhase } from "./SeasonStatsPhase";
-import { AcademyPlayersPhase } from "./AcademyPlayersPhase";
+import { ScraperOptions, SyncContext } from "./application/types/Common";
+import { fetchTeam } from "./helpers/ApiHelpers";
 
 export async function main({
     teamId,
     teamName,
-    playerIds,
-    matchIds,
-    scrapeStatuses = {},
-    refresh = false,
-    scope = "all",
+    season,
     leagueId,
-    season
+    syncType = "sync",
+    scope,
+    scrapeStatuses = {},
 }: ScraperOptions): Promise<void> {
-
-    const scrapeStatus = scrapeStatuses[teamId];
 
     if (!teamId || !teamName) {
         console.error("Both teamId and teamName are required !");
@@ -30,23 +22,23 @@ export async function main({
     );
 
     console.log(
-        refresh
-            ? scope === "all" ? "🔄 FULL REFRESH" : `🔄 REFRESH ${scope}`
-            : "▶️ SYNC NEW"
+        syncType === "sync" ? "SYNC" : `REFRESH ${scope}`
     );
 
-    ensureDataDirectory(teamId);
+    ensureDataDirectory(season, leagueId, teamId);
 
-    const teamInfo = await fetchTeamInfo(teamId);
+    const teamInfo = await fetchTeam(teamId);
+
+    const scrapeStatus = scrapeStatuses[teamId];
 
     const context: SyncContext = {
         teamId,
         teamName,
-        refresh,
+        season,
+        leagueId,
+        syncType,
         scope,
         scrapeStatus,
-        leagueId,
-        season
     };
 
     // const playersPhase = new PlayersPhase(context)

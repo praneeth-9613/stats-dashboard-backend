@@ -1,6 +1,6 @@
 import { findAcademyPlayersNotInSquad } from "./helpers/PlayerHelpers";
 import { processPlayers } from "./helpers/ProcessHelpers";
-import { SyncPhase } from "./SyncPhase";
+import { SyncPhase } from "./phases/SyncPhase";
 import { PlayersDatabase } from "./types/StoredPlayer";
 import { MatchesDatabase } from "./types/StoredStats";
 

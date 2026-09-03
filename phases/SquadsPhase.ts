@@ -1,32 +1,44 @@
-import { TeamResponse } from "./api/types/RawTeam";
-import { SquadMapper } from "./application/mappers/SquadMapper";
-import { SquadPhaseInput } from "./application/types/PhaseInput";
-import { SquadPhaseOutput } from "./application/types/PhaseOutput";
-import { SquadData } from "./application/types/SquadData";
-import { updateProgress } from "./helper";
-import { fetchSquad } from "./helpers/ApiHelpers";
-import { Squad } from "./persistence/entities/Squad";
-import { SquadAuditAction } from "./persistence/entities/SquadAudit";
-import { SquadEntityMapper } from "./persistence/mappers/SquadEntityMapper";
-import { SquadAuditRepository } from "./persistence/repositories/SquadAuditRepository";
-import { SquadRepository } from "./persistence/repositories/SquadRepository";
+import { TeamResponse } from "../api/types/RawTeam";
+import { SquadMapper } from "../application/mappers/SquadMapper";
+import { SquadPhaseInput } from "../application/types/PhaseInput";
+import { SquadPhaseOutput } from "../application/types/PhaseOutput";
+import { SquadData } from "../application/types/SquadData";
+import { fetchSquad } from "../helpers/ApiHelpers";
+import { Squad } from "../persistence/entities/Squad";
+import { SquadAuditAction } from "../persistence/entities/SquadAudit";
+import { SquadEntityMapper } from "../persistence/mappers/SquadEntityMapper";
+import { SquadAuditRepository } from "../persistence/repositories/SquadAuditRepository";
+import { SquadRepository } from "../persistence/repositories/SquadRepository";
 import { SyncPhase } from "./SyncPhase";
-import { SyncContext } from "./types/Common";
+import { SyncContext } from "../application/types/Common";
+import { injectable } from "tsyringe";
 
-export class SquadsPhase extends SyncPhase {
+@injectable()
+export class SquadsPhase extends SyncPhase<"add_players" | "remove_players"> {
 
     private phaseTotal = 0;
+    protected readonly steps = [
+        "add_players",
+        "remove_players",
+    ] as const;
 
     constructor(protected context: SyncContext, private readonly teamResponse: TeamResponse, private readonly squadMapper: SquadMapper, private readonly squadEntityMapper: SquadEntityMapper, private readonly squadRepository: SquadRepository, private readonly squadAuditRepository: SquadAuditRepository) { super(context); }
 
     async run(
         squadPhaseInput: SquadPhaseInput
     ): Promise<SquadPhaseOutput> {
-        const {
-        } = this.context;
-        const {
-            teamId,
-        } = squadPhaseInput;
+        const { syncType } = this.context;
+
+        // DB Data
+        const storedSquad = await this.squadRepository.findByTeamForLeagueSeason(squadPhaseInput);
+
+        const storedPlayerIds = new Set(
+            storedSquad.map(player => player.playerId)
+        );
+
+        if (syncType === "refresh") {
+            return { playersToInsert: [], playersToCheck: [...storedPlayerIds], playersToRemove: [] }
+        }
 
         // API Data
         const latestSquad = await fetchSquad(this.teamResponse);
@@ -35,15 +47,9 @@ export class SquadsPhase extends SyncPhase {
 
         const squadData = this.squadMapper.toSquadData(squadWithoutCoach);
 
-        // DB Data
-        const storedSquad = await this.squadRepository.findByTeamForLeagueSeason(squadPhaseInput);
-
         // Discover additions/removals
         const latestPlayerIds = new Set(
             squadData.map(player => player.playerId)
-        );
-        const storedPlayerIds = new Set(
-            storedSquad.map(player => player.playerId)
         );
 
         const playersAdded = squadData.filter(
@@ -84,40 +90,27 @@ export class SquadsPhase extends SyncPhase {
         playersAdded: SquadData[],
         playersRemoved: Squad[],
     ): Promise<void> {
-        const { scrapeStatus } = this.context;
 
-        if (playersAdded.length > 0) {
-            await this.addPlayers(
-                squadPhaseInput,
-                playersAdded,
-            );
-        }
+        await this.executeStep("add_players", playersAdded.length, playersAdded.length > 0 ?
+            `Adding ${playersAdded.length} players to squad` : `No players to add`, () => this.addPlayers(squadPhaseInput, playersAdded));
 
-        if (playersRemoved.length > 0) {
-            await this.removePlayers(
-                playersRemoved,
-            );
-        }
+        await this.executeStep("remove_players", playersAdded.length, playersAdded.length > 0 ?
+            `Removing ${playersAdded.length} players from squad` : `No players to remove`, () => this.removePlayers(playersRemoved));
 
-        updateProgress(
-            scrapeStatus,
-            this.phaseTotal,
-            `Processed squad (${this.phaseTotal} players)`,
-        );
     }
 
     private async addPlayers(
         squadPhaseInput: SquadPhaseInput,
         playersAdded: SquadData[],
     ): Promise<void> {
-        const entities = playersAdded.map(player =>
-            this.squadEntityMapper.toEntity(
+        const entities = playersAdded.map(player => {
+            return this.squadEntityMapper.toEntity(
                 player.playerId,
                 squadPhaseInput.teamId,
                 squadPhaseInput.leagueId,
                 squadPhaseInput.season,
-            ),
-        );
+            );
+        });
 
         const audits = entities.map(entity =>
             this.squadEntityMapper.toSquadAuditEntityFromSquad(

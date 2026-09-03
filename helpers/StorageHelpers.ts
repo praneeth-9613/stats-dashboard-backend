@@ -1,28 +1,40 @@
 import path from "path";
-import { PlayersDatabase } from "../types/StoredPlayer";
-import { MatchesDatabase } from "../types/StoredStats";
 import { getDataDirectory, loadJson } from "./DirectoryHelpers";
+import { MatchesGoalscorers, MatchesPlayerStats } from "../persistence/json/Matches";
+import { SeasonStats } from "../persistence/json/SeasonStats";
 
-export function loadMatches(teamId: number): MatchesDatabase {
-    const MATCHES_FILE = path.join(getDataDirectory(teamId), "matches.json");
+export function loadMatchesPlayerStats(season: string, leagueId: number, teamId: number): MatchesPlayerStats {
+    const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(season, leagueId, teamId), "matches-player-stats.json");
 
     const matches =
-        loadJson<MatchesDatabase>(
-            MATCHES_FILE,
+        loadJson<MatchesPlayerStats>(
+            MATCHES_PLAYER_STATS_FILE,
             {}
         );
 
     return matches;
 }
 
-export async function loadPlayers(teamId: number): Promise<PlayersDatabase> {
-    const PLAYERS_FILE = path.join(getDataDirectory(teamId), "players.json");
+export function loadMatchesGoalScorers(season: string, leagueId: number, teamId: number): MatchesGoalscorers {
+    const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(season, leagueId, teamId), "matches-goalscorers.json");
 
-    const players =
-        loadJson<PlayersDatabase>(
-            PLAYERS_FILE,
+    const matches =
+        loadJson<MatchesPlayerStats>(
+            MATCHES_PLAYER_STATS_FILE,
             {}
         );
 
-    return players;
+    return matches;
+}
+
+export function loadTeamSeasonStats(season: string, leagueId: number, teamId: number): SeasonStats | undefined {
+    const TEAM_SEASON_STATS_FILE = path.join(getDataDirectory(season, leagueId, teamId), "season-stats.json");
+
+    const seasonStats =
+        loadJson<SeasonStats | undefined>(
+            TEAM_SEASON_STATS_FILE,
+            undefined
+        );
+
+    return seasonStats;
 }

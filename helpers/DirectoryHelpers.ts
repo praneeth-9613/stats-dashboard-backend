@@ -1,18 +1,19 @@
 import fs from "fs";
 import path from "path";
+import fsp from "fs/promises";
 
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function getDataDirectory(teamId: number): string {
-    return path.join(__dirname, "..", "data", `${teamId}`);
+export function getDataDirectory(season: string, leagueId: number, teamId: number): string {
+    return path.join(__dirname, "..", "data", `${season}`, `${leagueId}`, `${teamId}`);
 }
 
-export function ensureDataDirectory(teamId: number): void {
+export function ensureDataDirectory(season: string, leagueId: number, teamId: number): void {
 
-    const DATA_DIR = path.join(__dirname, "..", "data", `${teamId}`);
+    const DATA_DIR = path.join(__dirname, "..", "data", `${season}`, `${leagueId}`, `${teamId}`);
 
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, {

@@ -1,3 +1,4 @@
+import { MatchResponse } from "../api/types/RawMatch";
 import { PlayerResponse } from "../api/types/RawPlayer";
 import { TeamResponse } from "../api/types/RawTeam"
 import { fetchJson } from "./DirectoryHelpers"
@@ -25,4 +26,12 @@ export async function fetchPlayer(playerId: number) {
     const playerResponse = await fetchJson<PlayerResponse>(PLAYER_URL);
 
     return playerResponse;
+}
+
+export async function fetchMatch(matchId: number) {
+    const MATCH_URL = `https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`
+
+    const matchResponse = await fetchJson<MatchResponse>(MATCH_URL);
+
+    return matchResponse;
 }

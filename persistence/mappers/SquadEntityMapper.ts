@@ -1,6 +1,8 @@
+import { injectable } from "tsyringe";
 import { Squad } from "../entities/Squad";
 import { SquadAudit, SquadAuditAction } from "../entities/SquadAudit";
 
+@injectable()
 export class SquadEntityMapper {
     toEntity(playerId: number, teamId: number, leagueId: number, season: string): Squad {
         const squad = new Squad();

@@ -14,11 +14,11 @@ export class FixtureMapper {
                 homeAway: (fixture.home.id === teamId) ? "home" : "away",
                 completed: fixture.status.finished,
                 fixtureDate: fixture.status.utcTime,
-                homeScore: fixture.home.score ?? null,
-                awayScore: fixture.away.score,
-                scoreStr: fixture.status.scoreStr ?? null,
+                homeScore: fixture.notStarted ? null : fixture.home.score,
+                awayScore: fixture.notStarted ? null : fixture.away.score,
+                scoreStr: fixture.notStarted ? null : (fixture.status.scoreStr ?? null),
                 isPenaltyShootout: fixture.status.reason?.long.toLowerCase() === "after penalties",
-                notStarted: fixture.notStarted
+                notStarted: fixture.notStarted,
             }
         })
     }

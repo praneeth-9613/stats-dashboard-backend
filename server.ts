@@ -1,9 +1,16 @@
 import "reflect-metadata";
 import express from "express";
 import { main } from "./main";
-import { ScraperOptions, ScrapeStatus } from "./types/Common";
-import { readJsonFile } from "./helper";
+import { newScrapeStatus, RefreshScope, ScraperOptions, ScrapeStatus, SyncType } from "./application/types/Common";
 import { AppDataSource } from "./persistence/data-source";
+import { FixtureRepository } from "./persistence/repositories/FixtureRepository";
+import { Fixture } from "./persistence/entities/Fixture";
+import { loadMatchesGoalScorers, loadMatchesPlayerStats, loadTeamSeasonStats } from "./helpers/StorageHelpers";
+import { PlayerService } from "./service/PlayerService";
+import { PlayerTeamRepository } from "./persistence/repositories/PlayerTeamRepository";
+import { PlayerTeam } from "./persistence/entities/PlayerTeam";
+import { PlayerRepository } from "./persistence/repositories/PlayerRepository";
+import { Player } from "./persistence/entities/Player";
 
 const app = express();
 
@@ -17,119 +24,127 @@ console.log("Database connected");
 
 await AppDataSource.destroy();
 
-function parseIds(value: unknown): number[] {
-    if (typeof value !== "string" || !value.trim()) {
-        return [];
-    }
+const fixtureRepository = new FixtureRepository(
+    AppDataSource.getRepository(Fixture),
+);
 
-    return value
-        .split(",")
-        .map((id) => Number(id.trim()))
-        .filter(
-            (id) =>
-                Number.isInteger(id) &&
-                id > 0
-        );
-}
+const playerTeamRepository = new PlayerTeamRepository(AppDataSource.getRepository(PlayerTeam));
+
+const playerRepository = new PlayerRepository(AppDataSource.getRepository(Player));
+
+const playerService = new PlayerService(playerTeamRepository, playerRepository);
 
 const scrapeStatuses: Record<number, ScrapeStatus> = {};
 
-/**
- * Start scraper
- *
- * Normal:
- * POST /api/scrape
- *
- * Full refresh:
- * POST /api/scrape?refresh=true
- *
- * Specific players:
- * POST /api/scrape?refresh=true&playerIds=123,456
- *
- * Specific matches:
- * POST /api/scrape?refresh=true&matchIds=5898653,5898654
- *
- * Both:
- * POST /api/scrape?refresh=true&playerIds=123,456&matchIds=5898653,5898654
- */
-app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
+function isSyncType(value: unknown): value is SyncType {
+    return value === "sync" || value === "refresh";
+}
 
+function isRefreshScope(value: unknown): value is RefreshScope {
+    return value === "players" || value === "fixtures";
+}
+
+function validateRequest(req: any, res: any): ScraperOptions | null {
     const teamId = Number(req.params.teamId);
     const teamName = req.params.teamName;
 
-    // Prevent multiple scraper processes
+    const season = String(req.query.season);
+    const leagueId = Number(req.query.leagueId);
+    const syncType = String(req.query.syncType);
+
+    if (!leagueId || !season) {
+        res.status(400).json({
+            started: false,
+            message: "leagueId and season are required",
+        });
+
+        return null;
+    }
+
+    if (!isSyncType(syncType)) {
+        res.status(400).json({
+            started: false,
+            message: "syncType must be 'sync' or 'refresh'",
+        });
+
+        return null;
+    }
+
+    const scopeParam = req.query.scope;
+
+    if (syncType === "sync" && !scopeParam) {
+        res.status(400).json({
+            started: false,
+            message: "scope must be provided only for 'refresh'",
+        });
+
+        return null;
+    }
+
+    let scope: RefreshScope | undefined;
+
+    if (syncType === "refresh") {
+        if (!isRefreshScope(scopeParam)) {
+            res.status(400).json({
+                started: false,
+                message: "scope must be 'players' or 'fixtures'",
+            });
+
+            return null;
+        }
+
+        scope = scopeParam;
+    }
+
     if (scrapeStatuses[teamId]?.running) {
         res.status(409).json({
             started: false,
             message: "Scraper is already running",
         });
 
-        return;
+        return null;
     }
-    const refresh = (req?.query?.refresh === "true")
 
-    const leagueId = req?.query?.leagueId || 47;
-    const season = req?.query?.season || "2026-2027";
-
-    const scope = req?.query?.scope || "all"
-
-    const playerIds = parseIds(
-        req.query.playerIds
-    );
-
-    const matchIds = parseIds(
-        req.query.matchIds
-    );
-
-    scrapeStatuses[teamId] = {
-        running: true,
-        completed: {
-            players: false,
-            fixtures: false,
-            season_stats: false,
-            academy_players: false
-        }
-    };
-
-
-    const options: ScraperOptions = {
-        refresh,
-        scope,
-        playerIds,
-        matchIds,
+    return {
+        season,
+        leagueId,
         teamId,
         teamName,
+        syncType,
+        scope,
         scrapeStatuses,
-        leagueId,
-        season,
     };
+}
+
+app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
+
+    const scraperOptions = validateRequest(req, res);
+
+    if (scraperOptions === null) return;
+
+    const { season, leagueId, teamId, teamName, syncType, scope } = scraperOptions;
+
+    scrapeStatuses[teamId] = newScrapeStatus();
 
     console.log("Starting scraper:");
-    console.log(options);
+    console.log(scraperOptions);
 
-    /*
-     * Run scraper in background.
-     *
-     * We intentionally don't await this so the
-     * API responds immediately.
-     */
-    main(options)
+    main(scraperOptions)
         .then(() => {
-            scrapeStatuses[teamId] = {
-                running: false
-            };
+            scrapeStatuses[teamId].running = false;
 
             console.log(
-                "Scraper completed successfully"
+                "Scraper completed successfully",
             );
         })
         .catch((error: unknown) => {
             console.error(
                 "Scraper failed:",
-                error
+                error,
             );
 
             scrapeStatuses[teamId] = {
+                ...scrapeStatuses[teamId],
                 running: false,
                 error:
                     error instanceof Error
@@ -140,12 +155,14 @@ app.post("/api/scrape/:teamId/:teamName", (req: any, res: any) => {
 
     res.json({
         started: true,
-        refresh,
-        playerIds,
-        matchIds,
+        season,
+        leagueId,
+        teamId,
+        teamName,
+        syncType,
+        scope
     });
 });
-
 
 /**
  * Get scraper status
@@ -161,13 +178,52 @@ app.get(
     }
 );
 
-app.get("/api/team/:teamId/matches", async (req, res) => {
+app.get("/api/team/:teamId/fixtures", async (req, res) => {
     try {
         const teamId = Number(req.params.teamId);
+        const season = String(req.query.season);
 
-        const matches = await readJsonFile(teamId, "matches.json");
+        const matches =
+            await fixtureRepository.findByTeamForSeason(
+                season,
+                teamId,
+            );
 
         res.json(matches);
+    } catch (error) {
+        console.error("Failed to read matches:", error);
+
+        res.status(500).json({
+            message: "Failed to read matches",
+        });
+    }
+});
+
+app.get("/api/team/:teamId/matches/player-stats", async (req, res) => {
+    try {
+        const teamId = Number(req.params.teamId);
+        const season = String(req.query.season);
+        const leagueId = Number(req.query.leagueId);
+
+        const matchesPlayerStats = loadMatchesPlayerStats(season, leagueId, teamId);
+
+        res.json(matchesPlayerStats);
+    } catch (error) {
+        console.error("Failed to read matches:", error);
+
+        res.status(200).json([]);
+    }
+});
+
+app.get("/api/team/:teamId/matches/goalscorers", async (req, res) => {
+    try {
+        const teamId = Number(req.params.teamId);
+        const season = String(req.query.season);
+        const leagueId = Number(req.query.leagueId);
+
+        const matchesGoalScorers = loadMatchesGoalScorers(season, leagueId, teamId);
+
+        res.json(matchesGoalScorers);
     } catch (error) {
         console.error("Failed to read matches:", error);
 
@@ -178,8 +234,9 @@ app.get("/api/team/:teamId/matches", async (req, res) => {
 app.get("/api/team/:teamId/players", async (req, res) => {
     try {
         const teamId = Number(req.params.teamId);
+        const season = String(req.query.season);
 
-        const players = await readJsonFile(teamId, "players.json");
+        const players = await playerService.findPlayersForTeamSeason(teamId, season)
 
         res.json(players);
     } catch (error) {
@@ -192,10 +249,10 @@ app.get("/api/team/:teamId/players", async (req, res) => {
 app.get("/api/team/:teamId/season-stats", async (req, res) => {
     try {
         const teamId = Number(req.params.teamId);
+        const season = String(req.query.season);
+        const leagueId = Number(req.query.leagueId);
 
-        const seasonStats = await readJsonFile(teamId,
-            "season-stats.json"
-        );
+        const seasonStats = loadTeamSeasonStats(season, leagueId, teamId);
 
         res.json(seasonStats);
     } catch (error) {
@@ -210,4 +267,9 @@ app.listen(PORT, () => {
     console.log(
         `API server running on http://localhost:${PORT}`
     );
+});
+
+process.on("SIGTERM", async () => {
+    await AppDataSource.destroy();
+    process.exit(0);
 });

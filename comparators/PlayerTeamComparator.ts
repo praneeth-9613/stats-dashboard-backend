@@ -1,7 +1,9 @@
-import { PlayerTeamData } from "./application/types/PlayerData";
+import { injectable } from "tsyringe";
+import { PlayerTeamData } from "../application/types/PlayerData";
+import { PlayerTeam } from "../persistence/entities/PlayerTeam";
 import { Comparator } from "./Comparator";
-import { PlayerTeam } from "./persistence/entities/PlayerTeam";
 
+@injectable()
 export class PlayerTeamComparator extends Comparator<PlayerTeamData, PlayerTeam> {
     constructor() {
         super([

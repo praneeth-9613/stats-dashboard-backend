@@ -1,3 +1,4 @@
+import { injectable } from "tsyringe";
 import { PlayerPhaseInput } from "../../application/types/PhaseInput";
 import { PlayerInjuryInformation, PlayerPositionData, PlayerProfile, PlayerTeamData } from "../../application/types/PlayerData";
 import { Player } from "../entities/Player";
@@ -5,6 +6,7 @@ import { PlayerAudit } from "../entities/PlayerAudit";
 import { PlayerTeam, TeamStatus } from "../entities/PlayerTeam";
 import { PlayerTeamAudit } from "../entities/PlayerTeamAudit";
 
+@injectable()
 export class PlayerEntityMapper {
     toPlayerEntity(playerProfile: PlayerProfile, positions: PlayerPositionData[], injury: PlayerInjuryInformation | null): Player {
         const player = new Player();
