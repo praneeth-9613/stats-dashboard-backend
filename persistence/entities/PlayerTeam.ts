@@ -1,9 +1,13 @@
 import {
     Column,
     Entity,
+    JoinColumn,
+    ManyToOne,
     PrimaryColumn,
     UpdateDateColumn,
 } from "typeorm";
+import { Player } from "./Player";
+import { LeagueSeasonTeam } from "./LeagueSeasonTeam";
 
 export enum TeamStatus {
     TRANSFERRED_OUT = "TRANSFERRED_OUT",
@@ -14,11 +18,14 @@ export enum TeamStatus {
 
 @Entity("playerTeam")
 export class PlayerTeam {
+    @PrimaryColumn({ type: "integer" })
+    playerId!: number;
+
     @PrimaryColumn({ type: "varchar" })
     season!: string;
 
     @PrimaryColumn({ type: "integer" })
-    playerId!: number;
+    leagueId!: number;
 
     @PrimaryColumn({ type: "integer" })
     teamId!: number;
@@ -41,4 +48,22 @@ export class PlayerTeam {
 
     @UpdateDateColumn()
     updatedAt!: Date;
+
+    @ManyToOne(() => Player, player => player.playerTeams)
+    @JoinColumn({
+        name: "playerId",
+        referencedColumnName: "playerId",
+    })
+    player!: Player;
+
+    @ManyToOne(() => LeagueSeasonTeam, {
+        nullable: false,
+        onDelete: "RESTRICT",
+    })
+    @JoinColumn([
+        { name: "teamId", referencedColumnName: "teamId" },
+        { name: "leagueId", referencedColumnName: "leagueId" },
+        { name: "season", referencedColumnName: "season" },
+    ])
+    leagueSeasonTeam!: LeagueSeasonTeam;
 }

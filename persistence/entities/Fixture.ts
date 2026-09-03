@@ -1,9 +1,12 @@
 import {
     Column,
     Entity,
+    JoinColumn,
+    ManyToOne,
     PrimaryColumn,
     UpdateDateColumn,
 } from "typeorm";
+import { LeagueSeasonTeam } from "./LeagueSeasonTeam";
 
 export enum FixtureStatus {
     NEW = "NEW",
@@ -21,10 +24,10 @@ export class Fixture {
     season!: string;
 
     @Column({ type: "integer" })
-    teamId!: number;
+    leagueId!: number;
 
-    @Column({ type: "varchar" })
-    opponent!: string;
+    @Column({ type: "integer" })
+    teamId!: number;
 
     @Column({ type: "varchar" })
     competition!: string;
@@ -40,6 +43,18 @@ export class Fixture {
 
     @Column({ type: "timestamp" })
     fixtureDate!: Date;
+
+    @Column({ type: "integer" })
+    homeId!: number;
+
+    @Column({ type: "integer" })
+    awayId!: number;
+
+    @Column({ type: "varchar" })
+    homeName!: string;
+
+    @Column({ type: "varchar" })
+    awayName!: string;
 
     @Column({ type: "integer", nullable: true })
     homeScore!: number | null;
@@ -70,4 +85,15 @@ export class Fixture {
 
     @UpdateDateColumn()
     updatedAt!: Date;
+
+    @ManyToOne(() => LeagueSeasonTeam, {
+        nullable: false,
+        onDelete: "RESTRICT",
+    })
+    @JoinColumn([
+        { name: "teamId", referencedColumnName: "teamId" },
+        { name: "leagueId", referencedColumnName: "leagueId" },
+        { name: "season", referencedColumnName: "season" },
+    ])
+    leagueSeasonTeam!: LeagueSeasonTeam;
 }

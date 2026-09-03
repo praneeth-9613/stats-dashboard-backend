@@ -8,7 +8,6 @@ export class TeamMapper {
 
         entity.teamId = team.id;
         entity.name = team.name;
-        entity.leagueName = team.leagueName;
         entity.primaryColor = team.primaryColor ?? null;
         entity.secondaryColor = team.secondaryColor ?? null;
 

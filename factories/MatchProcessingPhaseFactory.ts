@@ -1,6 +1,5 @@
 import { inject, injectable } from "tsyringe";
 import { SyncContext } from "../application/types/Common";
-import { SquadAuditRepository } from "../persistence/repositories/SquadAuditRepository";
 import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper";
 import { FixtureRepository } from "../persistence/repositories/FixtureRepository";
 import { FixtureAuditRepository } from "../persistence/repositories/FixtureAuditRepository";
@@ -20,7 +19,7 @@ export class MatchProcessingPhaseFactory {
         private readonly fixtureEntityMapper: FixtureEntityMapper,
         @inject(FixtureRepository)
         private readonly fixtureRepository: FixtureRepository,
-        @inject(SquadAuditRepository)
+        @inject(FixtureAuditRepository)
         private readonly fixtureAuditRepository: FixtureAuditRepository,
     ) { }
 

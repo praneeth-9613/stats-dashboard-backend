@@ -44,7 +44,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             "match_processing",
             this.phaseTotal,
             this.phaseTotal > 0
-                ? "Processing matches"
+                ? `Processing ${this.phaseTotal} matches`
                 : "No matches to process",
             () => this.work(),
         );
@@ -63,7 +63,10 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             return;
         }
 
+        this.context.logger?.info(`Starting step process_player_stats `);
         this.startStep("process_player_stats", fixturesToProcess.length, `Processing ${fixturesToProcess.length} player stats`)
+
+        this.context.logger?.info(`Starting step process_goalscorers `);
         this.startStep("process_goalscorers", fixturesToProcess.length, `Processing ${fixturesToProcess.length} goalscorers`)
 
         for (const matchId of fixturesToProcess) {
@@ -89,19 +92,22 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
 
             await this.markFixtureAsProcessed(matchId, latestMatch);
         }
+
+        this.context.logger?.info(`Completing step process_player_stats `);
+        this.context.logger?.info(`Completing step process_goalscorers `);
     }
 
     private async processMatchPlayerStats(matchId: number): Promise<void> {
-        const { season, leagueId, teamId, teamName } = this.context;
+        const { leagueSeasonTeamIdentifier, teamName } = this.context;
 
-        const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(season, leagueId, teamId), "matches-player-stats.json");
+        const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "matches-player-stats.json");
 
         // API Data
         const latestMatch = await fetchMatch(matchId);
-        const latestMatchData = this.matchMapper.toMatchPlayerStats(latestMatch, matchId, season, teamId);
+        const latestMatchData = this.matchMapper.toMatchPlayerStats(latestMatch, matchId, teamName, leagueSeasonTeamIdentifier);
 
         // Stored Data (JSON)
-        const storedMatches = loadMatchesPlayerStats(season, leagueId, teamId);
+        const storedMatches = loadMatchesPlayerStats(leagueSeasonTeamIdentifier);
 
         if (matchId in storedMatches) { // current match exists in stored matches
             const storedPlayerStats = storedMatches[matchId].playerStats ?? {};
@@ -109,8 +115,6 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             for (const [playerId, latestPlayer] of Object.entries(
                 latestMatchData.playerStats ?? {},
             )) {
-                if (latestPlayer.teamName !== teamName) continue; // skip opponent team's stats
-
                 const storedPlayer = storedPlayerStats[playerId];
 
                 if (!storedPlayer) {
@@ -167,15 +171,15 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     }
 
     private async processMatchGoalscorers(latestMatch: MatchResponse, matchId: number): Promise<void> {
-        const { season, leagueId, teamId } = this.context;
+        const { leagueSeasonTeamIdentifier } = this.context;
 
-        const MATCHES_GOALSCORERS_FILE = path.join(getDataDirectory(season, leagueId, teamId), "matches-goalscorers.json");
+        const MATCHES_GOALSCORERS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "matches-goalscorers.json");
 
         // API Data
-        const latestMatchData = this.matchMapper.toMatchGoalscorers(latestMatch, matchId, season, teamId);
+        const latestMatchData = this.matchMapper.toMatchGoalscorers(latestMatch, matchId, leagueSeasonTeamIdentifier);
 
         // Stored Data (JSON)
-        const storedMatches = loadMatchesGoalScorers(season, leagueId, teamId);
+        const storedMatches = loadMatchesGoalScorers(leagueSeasonTeamIdentifier);
 
         if (matchId in storedMatches) { // current match exists in stored matches
             // TODO: check for goalscorer changes

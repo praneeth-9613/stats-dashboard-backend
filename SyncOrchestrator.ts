@@ -10,6 +10,7 @@ import { FixturesPhaseFactory } from "./factories/FixturesPhaseFactory";
 import { MatchProcessingPhaseFactory } from "./factories/MatchProcessingPhaseFactory";
 import { SeasonStatsPhaseFactory } from "./factories/SeasonStatsPhaseFactory";
 import { FixturesPhaseOutput } from "./application/types/PhaseOutput";
+import { Logger } from "./Logger";
 
 @injectable()
 export class SyncOrchestrator {
@@ -61,14 +62,21 @@ export class SyncOrchestrator {
 
         const scrapeStatus = scrapeStatuses[teamId];
 
-        const context: SyncContext = {
+        const leagueSeasonTeamIdentifier = { season, leagueId, teamId };
+
+        const logger = new Logger({
             teamId,
-            teamName,
             season,
             leagueId,
+        });
+
+        const context: SyncContext = {
+            leagueSeasonTeamIdentifier,
+            teamName,
             syncType,
             scope,
             scrapeStatus,
+            logger
         };
 
         await this.runPhases(context, teamInfo);
@@ -109,19 +117,17 @@ export class SyncOrchestrator {
         context: SyncContext,
         teamInfo: TeamResponse
     ): Promise<void> {
-        const { season, leagueId, teamId } = context;
+        const { leagueSeasonTeamIdentifier } = context;
 
         const squadPhase = this.squadPhaseFactory.create(context, teamInfo);
 
         const squadPhaseInput: SquadPhaseInput = {
-            season,
-            leagueId,
-            teamId,
+            leagueSeasonTeamIdentifier
         }
 
         const squadPhaseOutput = await squadPhase.run(squadPhaseInput);
 
-        const playerPhaseInput: PlayerPhaseInput = { ...squadPhaseOutput, season, teamId }
+        const playerPhaseInput: PlayerPhaseInput = { ...squadPhaseOutput, leagueSeasonTeamIdentifier }
 
         const playersPhase =
             this.playersPhaseFactory.create(

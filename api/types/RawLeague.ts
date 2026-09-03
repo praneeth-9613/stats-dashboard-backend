@@ -5,7 +5,10 @@ export interface LeagueResponse {
                 all: LeagueTableTeam[]
             }
         }
-    }[]
+    }[],
+    details: {
+        name: string
+    }
 }
 
 export interface LeagueTableTeam {

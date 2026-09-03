@@ -24,16 +24,12 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats" | "p
 
     async run(): Promise<void> {
         const {
-            season,
-            leagueId,
-            teamId,
+            leagueSeasonTeamIdentifier
         } = this.context;
 
         const matchPlayerStats =
             loadMatchesPlayerStats(
-                season,
-                leagueId,
-                teamId,
+                leagueSeasonTeamIdentifier
             );
 
         this.phaseTotal = Object.values(matchPlayerStats).length;
@@ -49,30 +45,27 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats" | "p
 
     private async work(matchPlayerStats: MatchesPlayerStats): Promise<void> {
         const {
-            season,
-            leagueId,
-            teamId,
+            leagueSeasonTeamIdentifier,
             teamName,
         } = this.context;
 
-        const SEASON_STATS_FILE = path.join(getDataDirectory(season, leagueId, teamId), "season-stats.json");
+        const SEASON_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "season-stats.json");
 
         const seasonStats: SeasonStats = {
             team: teamName,
-            teamId,
-            season,
+            leagueSeasonTeamIdentifier,
             matchesProcessed: this.phaseTotal,
-            players: [],
+            players: {},
         };
 
         const matches = Object.values(matchPlayerStats);
 
         await this.executeStep(
-            "process_team_season_stats", 
-            matches.length, 
-            matches.length > 0 
-                ? `Processing team season stats for ${matches.length} matches` 
-                : `No matches to process season stats`, 
+            "process_team_season_stats",
+            matches.length,
+            matches.length > 0
+                ? `Processing team season stats for ${matches.length} matches`
+                : `No matches to process season stats`,
             () => this.processTeamSeasonStats(matches, seasonStats)
         )
 

@@ -8,10 +8,14 @@ export class FixtureEntityMapper {
 
         fixture.matchId = fixtureData.matchId;
         fixture.season = fixtureData.season;
+        fixture.leagueId = fixtureData.leagueId;
         fixture.teamId = fixtureData.teamId;
-        fixture.opponent = fixtureData.opponent;
         fixture.homeAway = fixtureData.homeAway;
         fixture.competition = fixtureData.competition;
+        fixture.homeId = fixtureData.homeId;
+        fixture.awayId = fixtureData.awayId;
+        fixture.homeName = fixtureData.homeName;
+        fixture.awayName = fixtureData.awayName;
         fixture.homeScore = fixtureData.homeScore;
         fixture.awayScore = fixtureData.awayScore;
         fixture.scoreStr = fixtureData.scoreStr;
@@ -24,7 +28,7 @@ export class FixtureEntityMapper {
         return fixture;
     }
 
-    toFixtureAuditEntity(fixture: Fixture, field: keyof Fixture, oldValue: any , newValue: any): FixtureAudit {
+    toFixtureAuditEntity(fixture: Fixture, field: keyof Fixture, oldValue: any, newValue: any): FixtureAudit {
         const fixtureAudit = new FixtureAudit();
 
         fixtureAudit.matchId = fixture.matchId;

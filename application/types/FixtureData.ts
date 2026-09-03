@@ -3,9 +3,9 @@ export interface FixtureData {
 
     season: string;
 
-    teamId: number;
+    leagueId: number;
 
-    opponent: string;
+    teamId: number;
 
     competition: string;
 
@@ -14,6 +14,14 @@ export interface FixtureData {
     completed: boolean;
 
     fixtureDate: string;
+
+    homeId: number;
+
+    awayId: number;
+
+    homeName: string;
+
+    awayName: string;
 
     homeScore: number | null;
 

@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { PlayerPhaseInput } from "../../application/types/PhaseInput";
+import { LeagueSeasonTeamIdentifier, PlayerPhaseInput } from "../../application/types/PhaseInput";
 import { PlayerInjuryInformation, PlayerPositionData, PlayerProfile, PlayerTeamData } from "../../application/types/PlayerData";
 import { Player } from "../entities/Player";
 import { PlayerAudit } from "../entities/PlayerAudit";
@@ -12,6 +12,7 @@ export class PlayerEntityMapper {
         const player = new Player();
 
         player.playerId = playerProfile.id;
+        player.name = playerProfile.name;
         player.age = Number(playerProfile.age);
         player.height = playerProfile.height ?? "";
         player.country = playerProfile.country ?? "";
@@ -23,7 +24,7 @@ export class PlayerEntityMapper {
         return player;
     }
 
-    toPlayerTeamEntity(playerId: number, playerTeamData: PlayerTeamData): PlayerTeam {
+    toPlayerTeamEntity(playerId: number, playerTeamData: PlayerTeamData, leagueSeasonTeam: LeagueSeasonTeamIdentifier): PlayerTeam {
         const playerTeam = new PlayerTeam();
 
         playerTeam.playerId = playerId;
@@ -31,11 +32,15 @@ export class PlayerEntityMapper {
         playerTeam.shirtNumber = playerTeamData.shirt ?? null;
         playerTeam.teamStatus = playerTeamData.teamStatus ?? TeamStatus.UNKNOWN;
         playerTeam.isCaptain = playerTeamData.isCaptain;
+        playerTeam.contractEnd = playerTeamData.contractEnd;
+
+        playerTeam.season = leagueSeasonTeam.season;
+        playerTeam.leagueId = leagueSeasonTeam.leagueId;
 
         return playerTeam;
     }
 
-    toPlayerAuditEntity(playerId: number, field: keyof Player, oldValue: any , newValue: any) : PlayerAudit{
+    toPlayerAuditEntity(playerId: number, field: keyof Player, oldValue: any, newValue: any): PlayerAudit {
         const playerAudit = new PlayerAudit();
 
         playerAudit.playerId = playerId;
@@ -46,12 +51,13 @@ export class PlayerEntityMapper {
         return playerAudit;
     }
 
-    toPlayerTeamAuditEntity(playerPhaseInput: PlayerPhaseInput, playerId: number, field: keyof PlayerTeam, oldValue: any , newValue: any) : PlayerTeamAudit{
+    toPlayerTeamAuditEntity(playerPhaseInput: PlayerPhaseInput, playerId: number, field: keyof PlayerTeam, oldValue: any, newValue: any): PlayerTeamAudit {
         const playerTeamAudit = new PlayerTeamAudit();
 
         playerTeamAudit.playerId = playerId;
-        playerTeamAudit.teamId = playerPhaseInput.teamId;
-        playerTeamAudit.season = playerPhaseInput.season;
+        playerTeamAudit.season = playerPhaseInput.leagueSeasonTeamIdentifier.season;
+        playerTeamAudit.leagueId = playerPhaseInput.leagueSeasonTeamIdentifier.leagueId;
+        playerTeamAudit.teamId = playerPhaseInput.leagueSeasonTeamIdentifier.teamId ?? 0;
         playerTeamAudit.field = field;
         playerTeamAudit.oldValue = oldValue;
         playerTeamAudit.newValue = newValue;

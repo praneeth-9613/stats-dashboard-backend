@@ -14,15 +14,19 @@ export abstract class SyncPhase<TStep extends string> {
         message: string,
         work: () => Promise<T>
     ): Promise<T> {
+        this.context.logger?.info(`Starting phase ${phase}`);
         this.startPhase(
             phase,
             total,
             message
         );
 
+        this.context.logger?.info(`${message} `);
+
         try {
             const result = await work();
 
+            this.context.logger?.info(`Completing phase ${phase}`);
             this.completePhase(
                 phase
             );
@@ -40,13 +44,16 @@ export abstract class SyncPhase<TStep extends string> {
         message: string,
         work: () => Promise<void>,
     ): Promise<void> {
+        this.context.logger?.info(`Starting step ${step} `);
         this.startStep(
             step,
             total,
             message,
         );
+        this.context.logger?.info(`${message} `);
 
         if (total === 0) {
+            this.context.logger?.info(`Completing step ${step} `);
             this.updateEmptyStep(
                 step,
             );
@@ -56,9 +63,11 @@ export abstract class SyncPhase<TStep extends string> {
 
         await work();
 
+        this.context.logger?.info(`Completing step ${step} `);
         this.completeStep(
             step,
         );
+
     }
 
     startPhase(

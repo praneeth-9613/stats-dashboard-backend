@@ -1,21 +1,24 @@
 import { MatchPlayerResponse, MatchResponse } from "../../api/types/RawMatch"
+import { PlayerOfTheMatchResponse } from "../../api/types/RawMatchFacts";
 import { GoalEventResponse, MatchHeaderEventsResponse } from "../../api/types/RawMatchHeader";
 import { GoalEvent, MatchGoalscorers, MatchHeaderEvents, MatchPlayer, MatchPlayerStats } from "../../persistence/json/Matches"
+import { LeagueSeasonTeamIdentifier } from "../types/PhaseInput";
 
 export class MatchMapper {
 
-    toMatchPlayerStats(matchResponse: MatchResponse, matchId: number, season: string, teamId: number): MatchPlayerStats {
+    toMatchPlayerStats(matchResponse: MatchResponse, matchId: number, teamName: string, leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchPlayerStats {
 
         const playerStats = Object.values(matchResponse.content?.playerStats ?? {});
 
         const match: MatchPlayerStats = {
             matchId,
-            season,
-            teamId
+            leagueSeasonTeamIdentifier,
         }
 
         for (const player of playerStats) {
-            const matchPlayer = this.toMatchPlayer(player, season, teamId)
+            const matchPlayer = this.toMatchPlayer(player)
+
+            if (matchPlayer.teamName !== teamName) continue;
 
             match.playerStats = {
                 ...match.playerStats,
@@ -27,7 +30,7 @@ export class MatchMapper {
 
     }
 
-    toMatchPlayer(matchPlayerResponse: MatchPlayerResponse, season: string, teamId: number): MatchPlayer {
+    toMatchPlayer(matchPlayerResponse: MatchPlayerResponse): MatchPlayer {
         return {
             playerId: matchPlayerResponse.id,
             name: matchPlayerResponse.name,
@@ -38,16 +41,26 @@ export class MatchMapper {
         }
     }
 
-    toMatchGoalscorers(matchResponse: MatchResponse, matchId: number, season: string, teamId: number): MatchGoalscorers {
+    toMatchGoalscorers(matchResponse: MatchResponse, matchId: number, leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchGoalscorers {
         return {
             matchId,
-            season,
-            teamId,
+            leagueSeasonTeamIdentifier,
             goalscorers: matchResponse.header?.events
                 ? this.toMatchHeaderEvents(matchResponse.header?.events)
                 : undefined,
-            playerOfTheMatch: matchResponse.content?.matchFacts?.playerOfTheMatch
+            playerOfTheMatch: this.toPlayerOfMatch(matchResponse.content?.matchFacts?.playerOfTheMatch ?? null)
         };
+    }
+
+    toPlayerOfMatch(playerOfTheMatchResponse: PlayerOfTheMatchResponse | null) {
+        if (playerOfTheMatchResponse === null) return null;
+
+        return {
+            id: playerOfTheMatchResponse.id,
+            name: playerOfTheMatchResponse.name.fullName,
+            teamName: playerOfTheMatchResponse.teamName,
+            rating: Number(playerOfTheMatchResponse.rating.num)
+        }
     }
 
     private toMatchHeaderEvents(

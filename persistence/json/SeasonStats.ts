@@ -1,10 +1,11 @@
+import { LeagueSeasonTeamIdentifier } from "../../application/types/PhaseInput";
+
 export interface SeasonStats {
     team: string;
-    teamId: number;
-    season: string;
+    leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier;
     matchesProcessed: number;
     generatedAt?: string;
-    players: SeasonPlayerStats[];
+    players: Record<string, SeasonPlayerStats>;
 }
 
 export interface SeasonPlayerStats {

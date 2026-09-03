@@ -1,6 +1,6 @@
 import { Repository } from "typeorm";
 import { PlayerTeam } from "../entities/PlayerTeam";
-import { PlayerPhaseInput } from "../../application/types/PhaseInput";
+import { LeagueSeasonTeamIdentifier, PlayerPhaseInput } from "../../application/types/PhaseInput";
 import { inject, injectable } from "tsyringe";
 import { TOKENS } from "../../tokens";
 
@@ -11,11 +11,12 @@ export class PlayerTeamRepository {
         private readonly repository: Repository<PlayerTeam>
     ) { }
 
-    async findByPlayerAndTeamForSeason({ season, teamId }: PlayerPhaseInput, playerId: number): Promise<PlayerTeam | null> {
+    async findByPlayerForLeagueSeasonTeam({ leagueSeasonTeamIdentifier }: PlayerPhaseInput, playerId: number): Promise<PlayerTeam | null> {
         return this.repository.findOne({
             where: {
-                season,
-                teamId,
+                season: leagueSeasonTeamIdentifier.season,
+                leagueId: leagueSeasonTeamIdentifier.leagueId,
+                teamId: leagueSeasonTeamIdentifier.teamId,
                 playerId,
             },
             order: {
@@ -25,11 +26,15 @@ export class PlayerTeamRepository {
     }
 
 
-    async findByTeamForSeason(season: string, teamId: number): Promise<PlayerTeam[]> {
+    async findByLeagueSeasonTeam(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): Promise<PlayerTeam[]> {
         return this.repository.find({
             where: {
-                season,
-                teamId,
+                season: leagueSeasonTeamIdentifier.season,
+                leagueId: leagueSeasonTeamIdentifier.leagueId,
+                teamId: leagueSeasonTeamIdentifier.teamId,
+            },
+            relations: {
+                player: true,
             },
             order: {
                 updatedAt: "DESC",

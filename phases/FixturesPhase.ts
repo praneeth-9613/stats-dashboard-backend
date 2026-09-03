@@ -11,6 +11,7 @@ import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper"
 import { FixtureAuditRepository } from "../persistence/repositories/FixtureAuditRepository";
 import { FixtureComparator } from "../comparators/FixtureComparator";
 import { SyncPhase } from "./SyncPhase";
+import { loadMatchesPlayerStats } from "../helpers/StorageHelpers";
 
 export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtures" | "mark_for_processing_fixtures"> {
 
@@ -26,17 +27,16 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
 
     async run(): Promise<FixturesPhaseOutput> {
         const {
-            teamId,
-            season,
+            leagueSeasonTeamIdentifier
         } = this.context;
 
         // API Data
         const latestFixtures = await fetchFixtures(this.teamResponse);
 
-        const latestFixtureData = this.fixtureMapper.toFixtureData(latestFixtures, season, teamId);
+        const latestFixtureData = this.fixtureMapper.toFixtureData(latestFixtures, leagueSeasonTeamIdentifier);
 
         // DB Data
-        const storedFixtures = await this.fixtureRepository.findByTeamForSeason(season, teamId);
+        const storedFixtures = await this.fixtureRepository.findByLeagueSeasonTeam(leagueSeasonTeamIdentifier);
 
         // Discover new / rescheduled fixtures
         const latestFixturesById = new Map(

@@ -1,8 +1,12 @@
 import { Repository } from "typeorm";
 import { Team } from "../entities/Team";
+import { inject, injectable } from "tsyringe";
+import { TOKENS } from "../../tokens";
 
+@injectable()
 export class TeamRepository {
     constructor(
+        @inject(TOKENS.TeamOrmRepository)
         private readonly repository: Repository<Team>
     ) { }
 

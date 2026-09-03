@@ -83,7 +83,3 @@ export const GOALKEEPER_STAT_CONFIG: Record<string, string[]> = {
         "fantasy_points"
     ]
 };
-
-export const LEAGUES: Record<number, string> = {
-    47: "Premier League"
-}

@@ -14,7 +14,7 @@ export class PlayerTeamComparator extends Comparator<PlayerTeamData, PlayerTeam>
             {
                 newField: "contractEnd",
                 oldField: "contractEnd",
-            },
+            }
         ]);
     }
 }

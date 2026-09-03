@@ -3,12 +3,13 @@ import path from "path";
 import fsp from "fs/promises";
 
 import { fileURLToPath } from "url";
+import { LeagueSeasonTeamIdentifier } from "../application/types/PhaseInput";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function getDataDirectory(season: string, leagueId: number, teamId: number): string {
-    return path.join(__dirname, "..", "data", `${season}`, `${leagueId}`, `${teamId}`);
+export function getDataDirectory(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): string {
+    return path.join(__dirname, "..", "data", `${leagueSeasonTeamIdentifier.season}`, `${leagueSeasonTeamIdentifier.leagueId}`, `${leagueSeasonTeamIdentifier.teamId}`);
 }
 
 export function ensureDataDirectory(season: string, leagueId: number, teamId: number): void {

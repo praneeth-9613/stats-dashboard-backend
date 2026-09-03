@@ -1,3 +1,6 @@
+import { Logger } from "../../Logger";
+import { LeagueSeasonTeamIdentifier } from "./PhaseInput";
+
 export type ScrapePhase =
     "squad"
     | "players"
@@ -59,13 +62,12 @@ export interface ScraperOptions {
 export type RefreshScope = "players" | "fixtures";
 
 export interface SyncContext {
-    season: string;
-    leagueId: number;
-    teamId: number;
+    leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier,
     teamName: string;
     syncType?: SyncType;
     scope?: RefreshScope
     scrapeStatus: ScrapeStatus;
+    logger?: Logger;
 }
 
 export interface ScrapeStepStatus {

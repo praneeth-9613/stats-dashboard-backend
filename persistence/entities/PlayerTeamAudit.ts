@@ -7,5 +7,8 @@ export class PlayerTeamAudit extends BasePlayerAudit {
     season!: string;
 
     @Column({ type: "integer" })
+    leagueId!: number;
+
+    @Column({ type: "integer" })
     teamId!: number;
 }

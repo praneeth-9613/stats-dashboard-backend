@@ -1,4 +1,7 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
+import { CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from "typeorm";
+import { Team } from "./Team";
+import { League } from "./League";
+import { Fixture } from "./Fixture";
 
 @Entity("leagueSeasonTeam")
 export class LeagueSeasonTeam {
@@ -16,4 +19,27 @@ export class LeagueSeasonTeam {
 
     @UpdateDateColumn()
     updatedAt!: Date;
+
+    @ManyToOne(() => League, {
+        nullable: false,
+        onDelete: "RESTRICT",
+    })
+    @JoinColumn({
+        name: "leagueId",
+        referencedColumnName: "leagueId",
+    })
+    league!: League;
+
+    @ManyToOne(() => Team, {
+        nullable: false,
+        onDelete: "RESTRICT",
+    })
+    @JoinColumn({
+        name: "teamId",
+        referencedColumnName: "teamId",
+    })
+    team!: Team;
+
+    @OneToMany(() => Fixture, fixture => fixture.leagueSeasonTeam)
+    fixtures!: Fixture[];
 }

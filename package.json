@@ -1,7 +1,7 @@
 {
   "name": "arsenal",
   "version": "1.0.0",
-  "main": "main.ts",
+  "main": "server.ts",
   "type": "module",
   "scripts": {
     "scrape": "tsx scrape.ts",

@@ -1,16 +1,21 @@
 import { MatchStatSectionResponse } from "../../api/types/RawMatch";
 import { InfoBoxStadiumResponse, PlayerOfTheMatchResponse } from "../../api/types/RawMatchFacts";
+import { LeagueSeasonTeamIdentifier } from "../../application/types/PhaseInput";
 
 export type MatchesPlayerStats = Record<string, MatchPlayerStats>
 
-export type PlayerOfTheMatch = PlayerOfTheMatchResponse;
+export type PlayerOfTheMatch = {
+    id: number;
+    name: string;
+    teamName: string;
+    rating: number;
+};
 
 export type Stadium = InfoBoxStadiumResponse;
 
 export interface MatchPlayerStats {
     matchId: number;
-    season: string;
-    teamId: number;
+    leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier;
     playerStats?: Record<string, MatchPlayer>;
 }
 
@@ -27,10 +32,9 @@ export type MatchesGoalscorers = Record<string, MatchGoalscorers>
 
 export interface MatchGoalscorers {
     matchId: number;
-    season: string;
-    teamId: number;
+    leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier;
     goalscorers?: MatchHeaderEvents;
-    playerOfTheMatch?: PlayerOfTheMatch;
+    playerOfTheMatch?: PlayerOfTheMatch | null;
 }
 
 export interface MatchHeaderEvents {

@@ -40,8 +40,6 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
     }
 
     async run(): Promise<void> {
-        console.log(`Players to process: ${this.phaseTotal}`);
-
         await this.execute(
             "players",
             this.phaseTotal,
@@ -81,7 +79,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
                 let playerIndex = 0;
                 for (const playerId of playersToCheck) {
                     await this.processPlayer(playerId, "check");
-                    this.updateStep(scrapeStatus, "check_players", ++playerIndex, `Checking updates to player entry ${playerIndex} of ${playersToInsert.length}`)
+                    this.updateStep(scrapeStatus, "check_players", ++playerIndex, `Checking updates to player entry ${playerIndex} of ${playersToCheck.length}`)
 
                 }
             });
@@ -96,7 +94,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
                 let playerIndex = 0;
                 for (const playerId of playersToRemove) {
                     await this.processPlayer(playerId, "remove");
-                    this.updateStep(scrapeStatus, "remove_players", ++playerIndex, `Removing player entry ${playerIndex} of ${playersToInsert.length} from team`)
+                    this.updateStep(scrapeStatus, "remove_players", ++playerIndex, `Removing player entry ${playerIndex} of ${playersToRemove.length} from team`)
                 }
             });
     }
@@ -120,7 +118,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
 
             if (type === "insert") {
                 const storedPlayerTeam =
-                    await this.playerTeamRepository.findByPlayerAndTeamForSeason(
+                    await this.playerTeamRepository.findByPlayerForLeagueSeasonTeam(
                         this.playerPhaseInput,
                         playerId,
                     );
@@ -128,7 +126,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
                 await this.processPlayerTeam(
                     playerId,
                     latestPlayerData.team,
-                    storedPlayerTeam,
+                    storedPlayerTeam
                 );
             }
         } else {
@@ -138,7 +136,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
 
     private async processPlayerRemoval(playerId: number, latestPlayerTeam: PlayerTeamData | null) {
         const storedPlayerTeam =
-            await this.playerTeamRepository.findByPlayerAndTeamForSeason(
+            await this.playerTeamRepository.findByPlayerForLeagueSeasonTeam(
                 this.playerPhaseInput,
                 playerId,
             );
@@ -225,6 +223,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         playerId: number,
         latestPlayerTeam: PlayerTeamData | null,
     ) {
+        const { leagueSeasonTeamIdentifier } = this.context;
         if (latestPlayerTeam === null) {
             return;
         }
@@ -233,6 +232,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             this.playerEntityMapper.toPlayerTeamEntity(
                 playerId,
                 latestPlayerTeam,
+                leagueSeasonTeamIdentifier
             );
 
         await this.playerTeamRepository.save(entity);
@@ -263,6 +263,8 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         latestPlayerTeam: PlayerTeamData,
         storedPlayerTeam: PlayerTeam,
     ) {
+        const { leagueSeasonTeamIdentifier } = this.context;
+
         const changedFields =
             this.playerTeamComparator.getChangedFields(
                 latestPlayerTeam,
@@ -309,6 +311,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             this.playerEntityMapper.toPlayerTeamEntity(
                 playerId,
                 latestPlayerTeam,
+                leagueSeasonTeamIdentifier
             );
 
         await this.playerTeamRepository.save(latestPlayerTeamEntity);

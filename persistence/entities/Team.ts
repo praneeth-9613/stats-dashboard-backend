@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
 
+
 @Entity("team")
 export class Team {
     @PrimaryColumn({ type: 'integer' })
@@ -7,9 +8,6 @@ export class Team {
 
     @Column(({ type: 'varchar' }))
     name!: string;
-
-    @Column(({ type: 'varchar' }))
-    leagueName!: string;
 
     @Column({ nullable: true, type: 'varchar' })
     primaryColor!: string | null;

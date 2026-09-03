@@ -40,12 +40,14 @@ export class SeasonStatsMapper {
         const rating =
             matchStats["rating_title"]?.value;
 
-        if (rating !== undefined && seasonPlayer.ratingSum && seasonPlayer.ratingMatches) {
-            seasonPlayer.ratingSum += rating;
-            seasonPlayer.ratingMatches++;
+        if (rating !== undefined) {
+            seasonPlayer.ratingSum! += rating;
+            seasonPlayer.ratingMatches!++;
+        }
+
+        if (seasonPlayer.ratingMatches! > 0) {
             seasonPlayer.averageRating =
-                seasonPlayer.ratingSum /
-                seasonPlayer.ratingMatches;
+                seasonPlayer.ratingSum! / seasonPlayer.ratingMatches!;
         }
 
         for (const [key, matchStat] of Object.entries(matchStats)) {
