@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import express from "express";
-import { newScrapeStatus, RefreshScope, ScraperOptions, ScrapeStatus, SyncType } from "./application/types/Common";
+import { newScrapeStatus, ScraperOptions, ScrapeStatus } from "./application/types/Common";
 import { AppDataSource } from "./persistence/data-source";
 import { FixtureRepository } from "./persistence/repositories/FixtureRepository";
 import { loadMatchesGoalScorers, loadMatchesPlayerStats, loadTeamSeasonStats } from "./helpers/StorageHelpers";
@@ -9,6 +9,8 @@ import { inject, injectable } from "tsyringe";
 import { LeagueSeasonTeamIdentifier } from "./application/types/PhaseInput";
 import { SyncOrchestrator } from "./SyncOrchestrator";
 import { FixtureResponseDto } from "./application/types/FixtureResponseDto";
+import { LeagueRepository } from "./persistence/repositories/LeagueRepository";
+import { LeagueSeasonTeamRepository } from "./persistence/repositories/LeagueSeasonTeamRepository";
 
 @injectable()
 export class ApiServer {
@@ -20,6 +22,12 @@ export class ApiServer {
     constructor(
         @inject(SyncOrchestrator)
         private readonly syncOrchestrator: SyncOrchestrator,
+
+        @inject(LeagueRepository)
+        private readonly leagueRepository: LeagueRepository,
+
+        @inject(LeagueSeasonTeamRepository)
+        private readonly leagueSeasonTeamRepository: LeagueSeasonTeamRepository,
 
         @inject(FixtureRepository)
         private readonly fixtureRepository: FixtureRepository,
@@ -53,21 +61,12 @@ export class ApiServer {
         });
     }
 
-    private isSyncType(value: unknown): value is SyncType {
-        return value === "sync" || value === "refresh";
-    }
-
-    private isRefreshScope(value: unknown): value is RefreshScope {
-        return value === "players" || value === "fixtures";
-    }
-
     private validateRequest(req: any, res: any): ScraperOptions | null {
         const teamId = Number(req.params.teamId);
         const teamName = req.params.teamName;
 
         const season = String(req.query.season);
         const leagueId = Number(req.query.leagueId);
-        const syncType = String(req.query.syncType);
 
         if (!leagueId || !season) {
             res.status(400).json({
@@ -76,41 +75,6 @@ export class ApiServer {
             });
 
             return null;
-        }
-
-        if (!this.isSyncType(syncType)) {
-            res.status(400).json({
-                started: false,
-                message: "syncType must be 'sync' or 'refresh'",
-            });
-
-            return null;
-        }
-
-        const scopeParam = req.query.scope;
-
-        if (syncType === "sync" && !scopeParam) {
-            res.status(400).json({
-                started: false,
-                message: "scope must be provided only for 'refresh'",
-            });
-
-            return null;
-        }
-
-        let scope: RefreshScope | undefined;
-
-        if (syncType === "refresh") {
-            if (!this.isRefreshScope(scopeParam)) {
-                res.status(400).json({
-                    started: false,
-                    message: "scope must be 'players' or 'fixtures'",
-                });
-
-                return null;
-            }
-
-            scope = scopeParam;
         }
 
         if (this.scrapeStatuses[teamId]?.running) {
@@ -127,18 +91,58 @@ export class ApiServer {
             leagueId,
             teamId,
             teamName,
-            syncType,
-            scope,
             scrapeStatuses: this.scrapeStatuses,
         };
     }
 
     private registerRoutes(): void {
+        this.registerLeagueRoutes();
         this.registerScrapeRoutes();
         this.registerFixtureRoutes();
         this.registerPlayerRoutes();
         this.registerMatchRoutes();
         this.registerSeasonStatsRoutes();
+    }
+
+    private registerLeagueRoutes(): void {
+        this.app.get(
+            "/api/leagues",
+            async (req, res) => {
+                try {
+                    const leagues =
+                        await this.leagueRepository.findAll();
+
+                    res.json(leagues);
+                } catch (error) {
+                    console.error("Failed to read fixtures:", error);
+
+                    res.status(500).json({
+                        message: "Failed to read fixtures",
+                    });
+                }
+            }
+        )
+
+        this.app.get(
+            "/api/leagues/:leagueId/teams",
+            async (req, res) => {
+                try {
+                    const season = String(req.query.season);
+                    const leagueId = Number(req.params.leagueId);
+
+                    const leagueSeasonTeams =
+                        await this.leagueSeasonTeamRepository.findBySeasonAndLeagueId(leagueId, season);
+
+                    res.json(leagueSeasonTeams);
+                } catch (error) {
+                    console.error("Failed to read fixtures:", error);
+
+                    res.status(500).json({
+                        message: "Failed to read fixtures",
+                    });
+                }
+            }
+        )
     }
 
     private registerFixtureRoutes(): void {
@@ -215,7 +219,7 @@ export class ApiServer {
 
             if (scraperOptions === null) return;
 
-            const { season, leagueId, teamId, teamName, syncType, scope } = scraperOptions;
+            const { season, leagueId, teamId, teamName } = scraperOptions;
 
             this.scrapeStatuses[teamId] = newScrapeStatus();
 
@@ -252,8 +256,6 @@ export class ApiServer {
                 leagueId,
                 teamId,
                 teamName,
-                syncType,
-                scope
             });
         });
 
@@ -315,6 +317,10 @@ export class ApiServer {
 
                 const seasonStats = loadTeamSeasonStats({ season, leagueId, teamId });
 
+                if (!seasonStats) {
+                    res.json({});
+                    return;
+                }
                 res.json(seasonStats);
             } catch (error) {
                 console.error("Failed to read season stats:", error);

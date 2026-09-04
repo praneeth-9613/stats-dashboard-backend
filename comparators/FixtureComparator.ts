@@ -17,10 +17,10 @@ export class FixtureComparator extends Comparator<FixtureData, Fixture> {
                 newField: "scoreStr",
                 oldField: "scoreStr",
             },
-             {
+            {
                 newField: "isPenaltyShootout",
                 oldField: "isPenaltyShootout",
-            },
+            }
         ]);
     }
 }

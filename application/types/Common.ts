@@ -9,8 +9,6 @@ export type ScrapePhase =
     | "season_stats"
     | "academy_players";
 
-export type SyncType = "sync" | "refresh";
-
 export interface ScrapeStatus {
     running: boolean;
 
@@ -54,18 +52,12 @@ export interface ScraperOptions {
     leagueId: number;
     teamId: number;
     teamName: string;
-    syncType: SyncType;
-    scope?: RefreshScope;
     scrapeStatuses: Record<number, ScrapeStatus>;
 }
-
-export type RefreshScope = "players" | "fixtures";
 
 export interface SyncContext {
     leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier,
     teamName: string;
-    syncType?: SyncType;
-    scope?: RefreshScope
     scrapeStatus: ScrapeStatus;
     logger?: Logger;
 }

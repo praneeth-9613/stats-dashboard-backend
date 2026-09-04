@@ -9,9 +9,7 @@ export class PlayerService {
 
     constructor(
         @inject(PlayerTeamRepository)
-        private readonly playerTeamRepository: PlayerTeamRepository,
-        @inject(PlayerRepository)
-        private readonly playerRepository: PlayerRepository) { }
+        private readonly playerTeamRepository: PlayerTeamRepository) { }
 
     async findPlayersForTeamSeason(
         leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier

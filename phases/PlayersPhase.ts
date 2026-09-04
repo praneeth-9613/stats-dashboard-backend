@@ -32,11 +32,11 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         super(context);
 
         const {
-            playersToInsert,
+            playersToAdd,
             playersToCheck,
             playersToRemove
         } = this.playerPhaseInput;
-        this.phaseTotal = [...playersToInsert, ...playersToCheck, ...playersToRemove].length;
+        this.phaseTotal = [...playersToAdd, ...playersToCheck, ...playersToRemove].length;
     }
 
     async run(): Promise<void> {
@@ -53,19 +53,19 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
 
     private async work() {
         const { scrapeStatus } = this.context;
-        const { playersToInsert, playersToCheck, playersToRemove } = this.playerPhaseInput;
+        const { playersToAdd, playersToCheck, playersToRemove } = this.playerPhaseInput;
 
         await this.executeStep(
             "add_players",
-            playersToInsert.length,
-            playersToInsert.length > 0
-                ? `Adding ${playersToInsert.length} players`
+            playersToAdd.length,
+            playersToAdd.length > 0
+                ? `Adding ${playersToAdd.length} players`
                 : "No new players to add",
             async () => {
                 let playerIndex = 0;
-                for (const playerId of playersToInsert) {
-                    await this.processPlayer(playerId, "insert");
-                    this.updateStep(scrapeStatus, "add_players", ++playerIndex, `Adding player entry ${playerIndex} of ${playersToInsert.length} to team`)
+                for (const playerId of playersToAdd) {
+                    await this.processPlayer(playerId, "add");
+                    this.updateStep(scrapeStatus, "add_players", ++playerIndex, `Adding player entry ${playerIndex} of ${playersToAdd.length} to team`)
                 }
             });
 
@@ -99,7 +99,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             });
     }
 
-    private async processPlayer(playerId: number, type: "insert" | "check" | "remove") {
+    private async processPlayer(playerId: number, type: "add" | "check" | "remove") {
         // API Data
         const latestPlayer = await fetchPlayer(playerId);
         const latestPlayerData = this.playerMapper.toPlayerData(latestPlayer);
@@ -108,7 +108,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         const storedPlayer =
             await this.playerRepository.findByPlayerId(playerId);
 
-        if (type === "insert" || type === "check") {
+        if (type === "add" || type === "check") {
 
             await this.processPlayerProfile(
                 playerId,
@@ -116,7 +116,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
                 storedPlayer,
             );
 
-            if (type === "insert") {
+            if (type === "add") {
                 const storedPlayerTeam =
                     await this.playerTeamRepository.findByPlayerForLeagueSeasonTeam(
                         this.playerPhaseInput,
@@ -199,24 +199,110 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         latestPlayerTeam: PlayerTeamData | null,
         storedPlayerTeam: PlayerTeam | null,
     ) {
+        const { leagueSeasonTeamIdentifier } = this.context;
+
         if (storedPlayerTeam === null) {
             await this.createPlayerTeam(playerId, latestPlayerTeam);
             return;
         }
 
-        if (latestPlayerTeam === null) {
-            await this.markPlayerAsFreeAgent(storedPlayerTeam);
-            return;
-        }
+        const newTeamStatus = this.findNewTeamStatus(
+            latestPlayerTeam?.teamId ?? null,
+        );
 
-        if (latestPlayerTeam.teamId !== storedPlayerTeam.teamId) {
-            await this.handleTeamChange(
-                playerId,
+        if (latestPlayerTeam?.teamId === leagueSeasonTeamIdentifier.teamId) {
+            await this.updateCurrentPlayerTeam(
                 latestPlayerTeam,
                 storedPlayerTeam,
             );
             return;
         }
+
+        if (storedPlayerTeam.teamStatus !== newTeamStatus) {
+            await this.updatePlayerTeamStatus(
+                storedPlayerTeam,
+                newTeamStatus,
+            );
+        }
+    }
+
+    private async updateCurrentPlayerTeam(
+        latestPlayerTeam: PlayerTeamData | null,
+        storedPlayerTeam: PlayerTeam,
+    ) {
+
+        if (latestPlayerTeam === null) return;
+
+        const changedFields =
+            this.playerTeamComparator.getChangedFields(
+                latestPlayerTeam,
+                storedPlayerTeam,
+            );
+
+        if (
+            changedFields.length === 0 &&
+            storedPlayerTeam.teamStatus === TeamStatus.CURRENT
+        ) {
+            return;
+        }
+
+        const audits: PlayerTeamAudit[] = [];
+
+        for (const { field, oldValue, newValue } of changedFields) {
+            storedPlayerTeam[field] = newValue as never;
+
+            audits.push(
+                this.playerEntityMapper.toPlayerTeamAuditEntity(
+                    this.playerPhaseInput,
+                    storedPlayerTeam.playerId,
+                    field,
+                    oldValue,
+                    newValue,
+                ),
+            );
+        }
+
+        if (audits.length > 0) {
+            await this.playerTeamAuditRepository.saveAll(audits);
+        }
+
+        await this.playerTeamRepository.save(storedPlayerTeam);
+    }
+
+    private async updatePlayerTeamStatus(
+        playerTeam: PlayerTeam,
+        newStatus: TeamStatus,
+    ): Promise<void> {
+        const { playerPhaseInput } = this;
+        const oldStatus = playerTeam.teamStatus;
+
+        playerTeam.teamStatus = newStatus;
+
+        await this.playerTeamAuditRepository.save(
+            this.playerEntityMapper.toPlayerTeamAuditEntity(
+                playerPhaseInput,
+                playerTeam.playerId,
+                "teamStatus",
+                oldStatus,
+                newStatus,
+            ),
+        );
+
+        await this.playerTeamRepository.save(playerTeam);
+    }
+
+    private findNewTeamStatus(
+        latestPlayerTeamId: number | null,
+    ): TeamStatus {
+        const { leagueSeasonTeamIdentifier } = this.context;
+
+        if (latestPlayerTeamId === null) {
+            return TeamStatus.FREE_AGENT;
+        }
+
+        return latestPlayerTeamId === leagueSeasonTeamIdentifier.teamId
+            ? TeamStatus.CURRENT
+            : TeamStatus.TRANSFERRED_OUT;
     }
 
     private async createPlayerTeam(
@@ -232,89 +318,11 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             this.playerEntityMapper.toPlayerTeamEntity(
                 playerId,
                 latestPlayerTeam,
-                leagueSeasonTeamIdentifier
+                leagueSeasonTeamIdentifier,
+                TeamStatus.CURRENT
             );
 
         await this.playerTeamRepository.save(entity);
-    }
-
-    private async markPlayerAsFreeAgent(
-        storedPlayerTeam: PlayerTeam,
-    ) {
-        const oldTeamStatus = storedPlayerTeam.teamStatus;
-
-        storedPlayerTeam.teamStatus = TeamStatus.FREE_AGENT;
-
-        const audit =
-            this.playerEntityMapper.toPlayerTeamAuditEntity(
-                this.playerPhaseInput,
-                storedPlayerTeam.playerId,
-                "teamStatus",
-                oldTeamStatus,
-                TeamStatus.FREE_AGENT,
-            );
-
-        await this.playerTeamRepository.save(storedPlayerTeam);
-        await this.playerTeamAuditRepository.save(audit);
-    }
-
-    private async handleTeamChange(
-        playerId: number,
-        latestPlayerTeam: PlayerTeamData,
-        storedPlayerTeam: PlayerTeam,
-    ) {
-        const { leagueSeasonTeamIdentifier } = this.context;
-
-        const changedFields =
-            this.playerTeamComparator.getChangedFields(
-                latestPlayerTeam,
-                storedPlayerTeam,
-            );
-
-        const audits: PlayerTeamAudit[] = [];
-
-        for (const { field, oldValue, newValue } of changedFields) {
-            storedPlayerTeam[field] = newValue as never;
-
-            audits.push(
-                this.playerEntityMapper.toPlayerTeamAuditEntity(
-                    this.playerPhaseInput,
-                    playerId,
-                    field,
-                    oldValue,
-                    newValue,
-                ),
-            );
-        }
-
-        const oldTeamStatus = storedPlayerTeam.teamStatus;
-
-        storedPlayerTeam.teamStatus = TeamStatus.TRANSFERRED_OUT;
-
-        audits.push(
-            this.playerEntityMapper.toPlayerTeamAuditEntity(
-                this.playerPhaseInput,
-                playerId,
-                "teamStatus",
-                oldTeamStatus,
-                TeamStatus.TRANSFERRED_OUT,
-            ),
-        );
-
-        await this.playerTeamRepository.save(storedPlayerTeam);
-
-        if (audits.length > 0) {
-            await this.playerTeamAuditRepository.saveAll(audits);
-        }
-
-        const latestPlayerTeamEntity =
-            this.playerEntityMapper.toPlayerTeamEntity(
-                playerId,
-                latestPlayerTeam,
-                leagueSeasonTeamIdentifier
-            );
-
-        await this.playerTeamRepository.save(latestPlayerTeamEntity);
     }
 
 }

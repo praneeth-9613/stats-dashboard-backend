@@ -11,7 +11,20 @@ export class LeagueSeasonTeamRepository {
     ) { }
 
     async findBySeasonAndLeagueId(leagueId: number, season: string): Promise<LeagueSeasonTeam[]> {
-        return this.repository.findBy({ season, leagueId });
+        return this.repository.find({
+            where: {
+                season,
+                leagueId,
+            },
+            relations: {
+                team: true,
+            },
+            order: {
+                team: {
+                    name: "ASC",
+                },
+            },
+        });
     }
 
     async saveAll(teams: LeagueSeasonTeam[]): Promise<LeagueSeasonTeam[]> {

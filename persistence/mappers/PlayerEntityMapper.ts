@@ -24,13 +24,13 @@ export class PlayerEntityMapper {
         return player;
     }
 
-    toPlayerTeamEntity(playerId: number, playerTeamData: PlayerTeamData, leagueSeasonTeam: LeagueSeasonTeamIdentifier): PlayerTeam {
+    toPlayerTeamEntity(playerId: number, playerTeamData: PlayerTeamData, leagueSeasonTeam: LeagueSeasonTeamIdentifier, teamStatus: TeamStatus): PlayerTeam {
         const playerTeam = new PlayerTeam();
 
         playerTeam.playerId = playerId;
         playerTeam.teamId = playerTeamData.teamId;
         playerTeam.shirtNumber = playerTeamData.shirt ?? null;
-        playerTeam.teamStatus = playerTeamData.teamStatus ?? TeamStatus.UNKNOWN;
+        playerTeam.teamStatus = teamStatus ?? TeamStatus.CURRENT;
         playerTeam.isCaptain = playerTeamData.isCaptain;
         playerTeam.contractEnd = playerTeamData.contractEnd;
 

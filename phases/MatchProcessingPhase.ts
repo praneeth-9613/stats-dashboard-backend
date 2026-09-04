@@ -14,6 +14,7 @@ import { FixtureAudit } from "../persistence/entities/FixtureAudit";
 import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper";
 import { FixtureAuditRepository } from "../persistence/repositories/FixtureAuditRepository";
 import { MatchProcessingPhaseInput } from "../application/types/PhaseInput";
+import { sleep } from "../helper";
 
 export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "process_goalscorers"> {
 
@@ -53,13 +54,37 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     private async work(): Promise<void> {
         const { scrapeStatus } = this.context;
 
-        const { fixturesToProcess } = this.matchProcessingPhaseInput;
+        const { fixturesToCheck, fixturesToProcess } = this.matchProcessingPhaseInput;
+
+        const fixturesToUpdate = []
+
+        for (const fixture of fixturesToCheck) {
+            const latestMatch = await fetchMatch(fixture);
+            const stadium = latestMatch.content?.matchFacts?.infoBox?.Stadium;
+
+
+            const storedFixture = await this.fixtureRepository.findByMatchId(fixture);
+
+            if (storedFixture !== null && (stadium?.name !== storedFixture?.stadiumName || stadium?.city !== storedFixture?.stadiumCity || stadium?.country !== storedFixture?.stadiumCountry)) {
+                storedFixture.stadiumName = stadium?.name ?? null;
+                storedFixture.stadiumCity = stadium?.city ?? null;
+                storedFixture.stadiumCountry = stadium?.country ?? null;
+
+                fixturesToUpdate.push(storedFixture);
+            }
+        }
+
+        if (fixturesToUpdate.length > 0) {
+            await this.fixtureRepository.saveAll(fixturesToUpdate);
+        }
 
         let index = 0;
 
         if (fixturesToProcess.length === 0) {
             this.updateEmptyStep("process_player_stats");
             this.updateEmptyStep("process_goalscorers");
+
+            await sleep(1500);
             return;
         }
 

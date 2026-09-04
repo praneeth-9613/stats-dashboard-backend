@@ -1,8 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import {
-    newScrapeStatus,
-    RefreshScope,
-    SyncType,
+    newScrapeStatus
 } from "./application/types/Common";
 
 import { getArgValue } from "./helper";
@@ -21,9 +19,6 @@ export class Scraper {
         const season = getArgValue("--season") || "2026-2027";
         const leagueId = Number(getArgValue("--leagueId") || 0);
 
-        const syncType = getArgValue("--syncType") as SyncType;
-        const scope = getArgValue("--scope") as RefreshScope;
-
         const scrapeStatuses = {
             [teamId]: newScrapeStatus(),
         };
@@ -33,8 +28,6 @@ export class Scraper {
             teamName,
             season,
             leagueId,
-            syncType,
-            scope,
             scrapeStatuses,
         });
     }

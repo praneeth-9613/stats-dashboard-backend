@@ -38,12 +38,13 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
         // DB Data
         const storedFixtures = await this.fixtureRepository.findByLeagueSeasonTeam(leagueSeasonTeamIdentifier);
 
+        const storedFixtureIds = new Set(
+            storedFixtures.map(fixture => fixture.matchId)
+        );
+
         // Discover new / rescheduled fixtures
         const latestFixturesById = new Map(
             latestFixtureData.map(fixture => [fixture.matchId, fixture]),
-        );
-        const storedFixtureIds = new Set(
-            storedFixtures.map(fixture => fixture.matchId)
         );
 
         const fixturesAdded = latestFixtureData.filter(
@@ -83,6 +84,8 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
 
         const fixturesToBeProcessed = [...fixturesAdded.filter(fixture => fixture.completed).map(fixture => this.fixtureEntityMapper.toEntity(fixture, FixtureStatus.NEW)), ...fixturesNewlyCompleted];
         const fixturesToProcess = fixturesToBeProcessed.map(fixture => fixture.matchId);
+        const fixturesToBeChecked = latestFixtureData.filter(fixture => !fixturesToProcess.includes(fixture.matchId));
+        const fixturesToCheck = fixturesToBeChecked.map(fixture => fixture.matchId);
 
         this.phaseTotal = [...fixturesAdded, ...fixturesRescheduled, ...fixturesToBeProcessed].length;
 
@@ -102,7 +105,7 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
         );
 
         // Outputs
-        return { fixturesToProcess }
+        return { fixturesToCheck, fixturesToProcess }
     }
 
     private async work(

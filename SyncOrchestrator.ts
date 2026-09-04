@@ -9,7 +9,6 @@ import { SquadPhaseFactory } from "./factories/SquadPhaseFactory";
 import { FixturesPhaseFactory } from "./factories/FixturesPhaseFactory";
 import { MatchProcessingPhaseFactory } from "./factories/MatchProcessingPhaseFactory";
 import { SeasonStatsPhaseFactory } from "./factories/SeasonStatsPhaseFactory";
-import { FixturesPhaseOutput } from "./application/types/PhaseOutput";
 import { Logger } from "./Logger";
 
 @injectable()
@@ -37,19 +36,11 @@ export class SyncOrchestrator {
             teamName,
             season,
             leagueId,
-            syncType,
-            scope,
             scrapeStatuses,
         } = options;
 
         console.log(
-            `Starting Processing for ${teamName} : ${teamId}`,
-        );
-
-        console.log(
-            syncType === "sync"
-                ? "SYNC"
-                : `REFRESH ${scope}`,
+            `Starting Sync for ${teamName} : ${teamId}`,
         );
 
         ensureDataDirectory(
@@ -73,8 +64,6 @@ export class SyncOrchestrator {
         const context: SyncContext = {
             leagueSeasonTeamIdentifier,
             teamName,
-            syncType,
-            scope,
             scrapeStatus,
             logger
         };
@@ -86,37 +75,7 @@ export class SyncOrchestrator {
         context: SyncContext,
         teamInfo: TeamResponse,
     ): Promise<void> {
-        const { syncType, scope } = context;
 
-        if (syncType === "refresh") {
-            if (scope === "players") {
-                await this.runPlayersPhase(context, teamInfo);
-                return;
-            }
-
-            if (scope === "fixtures") {
-                await this.runFixturesPhase(context, teamInfo);
-                return;
-            }
-        }
-
-        await this.runPlayersPhase(context, teamInfo);
-
-        const matchProcessingPhaseInput = await this.runFixturesPhase(context, teamInfo);
-
-        const matchProcessingPhase = this.matchProcessingPhaseFactory.create(context, matchProcessingPhaseInput);
-
-        await matchProcessingPhase.run();
-
-        const seasonStatsPhase = this.seasonStatsPhaseFactory.create(context);
-
-        await seasonStatsPhase.run();
-    }
-
-    private async runPlayersPhase(
-        context: SyncContext,
-        teamInfo: TeamResponse
-    ): Promise<void> {
         const { leagueSeasonTeamIdentifier } = context;
 
         const squadPhase = this.squadPhaseFactory.create(context, teamInfo);
@@ -136,18 +95,18 @@ export class SyncOrchestrator {
             );
 
         await playersPhase.run();
-    }
-
-    private async runFixturesPhase(
-        context: SyncContext,
-        teamInfo: TeamResponse
-    ): Promise<FixturesPhaseOutput> {
 
         const fixturesPhase = this.fixturesPhaseFactory.create(context, teamInfo);
 
         const fixturesPhaseOutput = await fixturesPhase.run();
 
-        return fixturesPhaseOutput;
+        const matchProcessingPhase = this.matchProcessingPhaseFactory.create(context, fixturesPhaseOutput);
+
+        await matchProcessingPhase.run();
+
+        const seasonStatsPhase = this.seasonStatsPhaseFactory.create(context);
+
+        await seasonStatsPhase.run();
     }
 
 }

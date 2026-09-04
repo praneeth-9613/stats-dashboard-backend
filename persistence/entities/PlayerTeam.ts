@@ -13,7 +13,8 @@ export enum TeamStatus {
     TRANSFERRED_OUT = "TRANSFERRED_OUT",
     FREE_AGENT = "FREE_AGENT",
     NOT_IN_SQUAD = "NOT_IN_SQUAD",
-    UNKNOWN = "UNKNOWN",
+    CURRENT = "CURRENT",
+    RESERVE = "RESERVE"
 }
 
 @Entity("playerTeam")
@@ -42,7 +43,7 @@ export class PlayerTeam {
     @Column({
         type: "enum",
         enum: TeamStatus,
-        default: TeamStatus.UNKNOWN,
+        default: TeamStatus.CURRENT,
     })
     teamStatus!: TeamStatus;
 

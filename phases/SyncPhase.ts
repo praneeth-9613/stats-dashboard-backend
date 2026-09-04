@@ -1,4 +1,5 @@
 import { ScrapePhase, ScrapeStatus, SyncContext } from "../application/types/Common";
+import { sleep } from "../helper";
 
 export abstract class SyncPhase<TStep extends string> {
 
@@ -25,6 +26,8 @@ export abstract class SyncPhase<TStep extends string> {
 
         try {
             const result = await work();
+
+            await sleep(1500);
 
             this.context.logger?.info(`Completing phase ${phase}`);
             this.completePhase(
@@ -62,6 +65,8 @@ export abstract class SyncPhase<TStep extends string> {
         }
 
         await work();
+
+        await sleep(1500);
 
         this.context.logger?.info(`Completing step ${step} `);
         this.completeStep(

@@ -1,9 +1,10 @@
 export interface SquadPhaseOutput {
-    playersToInsert: number[],
-    playersToCheck: number[],
-    playersToRemove: number[]
+    playersToAdd: number[];
+    playersToCheck: number[];
+    playersToRemove: number[];
 }
 
 export interface FixturesPhaseOutput {
-    fixturesToProcess: number[]
+    fixturesToCheck: number[];
+    fixturesToProcess: number[];
 }

@@ -32,6 +32,10 @@ export class LeagueRepository {
         return this.repository.findOneBy({ leagueId });
     }
 
+    async findAll(): Promise<League[]> {
+        return this.repository.find({});
+    }
+
     async save(league: League): Promise<League> {
         return this.repository.save(league);
     }
