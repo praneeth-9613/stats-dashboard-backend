@@ -13,5 +13,5 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "../1787914600854-InitialSchema.ts", "../1787916446103-LeagueSeasonTeamSchema.ts", "../1787917736287-SquadSchema.ts", "../1788347522784-FixtureAndPlayerSchema.ts", "../1788764895966-InitialSchema.ts", "../1788846712592-InitialSchema.ts", "../1788930767552-InitialSchema.ts", "../1788931298814-InitialSchema.ts", "../1788939403011-InitialSchema.ts"]
 }

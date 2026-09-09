@@ -1,6 +1,6 @@
 import { injectable } from "tsyringe";
 import { LeagueSeasonTeamIdentifier, PlayerPhaseInput } from "../../application/types/PhaseInput";
-import { PlayerInjuryInformation, PlayerPositionData, PlayerProfile, PlayerTeamData } from "../../application/types/PlayerData";
+import { PlayerInjuryInformation, PlayerPositionData, PlayerProfile, PlayerTeamData, PositionClass } from "../../application/types/PlayerData";
 import { Player } from "../entities/Player";
 import { PlayerAudit } from "../entities/PlayerAudit";
 import { PlayerTeam, TeamStatus } from "../entities/PlayerTeam";
@@ -8,7 +8,10 @@ import { PlayerTeamAudit } from "../entities/PlayerTeamAudit";
 
 @injectable()
 export class PlayerEntityMapper {
-    toPlayerEntity(playerProfile: PlayerProfile, positions: PlayerPositionData[], injury: PlayerInjuryInformation | null): Player {
+    toPlayerEntity(playerProfile: PlayerProfile, positions: {
+        class?: PositionClass,
+        list: PlayerPositionData[]
+    }, injury: PlayerInjuryInformation | null): Player {
         const player = new Player();
 
         player.playerId = playerProfile.id;
@@ -18,7 +21,7 @@ export class PlayerEntityMapper {
         player.country = playerProfile.country ?? "";
         player.transferValue = playerProfile.transfer_value ?? "";
         player.preferredFoot = playerProfile.preferred_foot ?? "Both";
-        player.positions = positions;
+        player.positions = positions.list;
         player.injury = injury;
 
         return player;
@@ -32,7 +35,9 @@ export class PlayerEntityMapper {
         playerTeam.shirtNumber = playerTeamData.shirt ?? null;
         playerTeam.teamStatus = teamStatus ?? TeamStatus.CURRENT;
         playerTeam.isCaptain = playerTeamData.isCaptain;
+        playerTeam.onLoan = playerTeamData.onLoan;
         playerTeam.contractEnd = playerTeamData.contractEnd;
+        playerTeam.transferredTo = playerTeamData.transferredTo;
 
         playerTeam.season = leagueSeasonTeam.season;
         playerTeam.leagueId = leagueSeasonTeam.leagueId;

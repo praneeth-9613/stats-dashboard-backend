@@ -71,7 +71,8 @@ export class PlayerMapper {
             teamName: playerResponse.primaryTeam.teamName,
             onLoan: playerResponse.primaryTeam.onLoan,
             isCaptain: playerResponse.isCaptain,
-            contractEnd: playerResponse.contractEnd?.utcTime ?? null
+            contractEnd: playerResponse.contractEnd?.utcTime ?? null,
+            transferredTo: null
         }
 
         this.enrichPlayerTeam(playerResponse.playerInformation, playerTeam);

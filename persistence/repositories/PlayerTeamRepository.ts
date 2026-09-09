@@ -11,7 +11,7 @@ export class PlayerTeamRepository {
         private readonly repository: Repository<PlayerTeam>
     ) { }
 
-    async findByPlayerForLeagueSeasonTeam({ leagueSeasonTeamIdentifier }: PlayerPhaseInput, playerId: number): Promise<PlayerTeam | null> {
+    async findByPlayerForLeagueSeasonTeam(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier, playerId: number): Promise<PlayerTeam | null> {
         return this.repository.findOne({
             where: {
                 season: leagueSeasonTeamIdentifier.season,

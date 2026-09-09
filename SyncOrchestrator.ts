@@ -10,6 +10,7 @@ import { FixturesPhaseFactory } from "./factories/FixturesPhaseFactory";
 import { MatchProcessingPhaseFactory } from "./factories/MatchProcessingPhaseFactory";
 import { SeasonStatsPhaseFactory } from "./factories/SeasonStatsPhaseFactory";
 import { Logger } from "./Logger";
+import { NonSquadPlayersPhaseFactory } from "./factories/NonSquadPlayersPhaseFactory";
 
 @injectable()
 export class SyncOrchestrator {
@@ -27,7 +28,10 @@ export class SyncOrchestrator {
         private readonly matchProcessingPhaseFactory: MatchProcessingPhaseFactory,
 
         @inject(SeasonStatsPhaseFactory)
-        private readonly seasonStatsPhaseFactory: SeasonStatsPhaseFactory
+        private readonly seasonStatsPhaseFactory: SeasonStatsPhaseFactory,
+
+        @inject(NonSquadPlayersPhaseFactory)
+        private readonly nonSquadPlayersPhaseFactory: NonSquadPlayersPhaseFactory
     ) { }
 
     async run(options: ScraperOptions): Promise<void> {
@@ -107,6 +111,10 @@ export class SyncOrchestrator {
         const seasonStatsPhase = this.seasonStatsPhaseFactory.create(context);
 
         await seasonStatsPhase.run();
+
+        const nonSquadPlayersPhase = this.nonSquadPlayersPhaseFactory.create(context);
+
+        await nonSquadPlayersPhase.run();
     }
 
 }

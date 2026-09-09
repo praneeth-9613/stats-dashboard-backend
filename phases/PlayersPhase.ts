@@ -119,7 +119,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             if (type === "add") {
                 const storedPlayerTeam =
                     await this.playerTeamRepository.findByPlayerForLeagueSeasonTeam(
-                        this.playerPhaseInput,
+                        this.playerPhaseInput.leagueSeasonTeamIdentifier,
                         playerId,
                     );
 
@@ -137,7 +137,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
     private async processPlayerRemoval(playerId: number, latestPlayerTeam: PlayerTeamData | null) {
         const storedPlayerTeam =
             await this.playerTeamRepository.findByPlayerForLeagueSeasonTeam(
-                this.playerPhaseInput,
+                this.playerPhaseInput.leagueSeasonTeamIdentifier,
                 playerId,
             );
 
@@ -156,7 +156,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         if (storedPlayer === null) {
             const player = this.playerEntityMapper.toPlayerEntity(
                 latestPlayerData.profile,
-                latestPlayerData.positions.list,
+                latestPlayerData.positions,
                 latestPlayerData.injury,
             );
 
@@ -210,6 +210,11 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             latestPlayerTeam?.teamId ?? null,
         );
 
+        const transferredTo =
+            newTeamStatus === TeamStatus.TRANSFERRED_OUT
+                ? latestPlayerTeam?.teamName ?? null
+                : null;
+
         if (latestPlayerTeam?.teamId === leagueSeasonTeamIdentifier.teamId) {
             await this.updateCurrentPlayerTeam(
                 latestPlayerTeam,
@@ -217,11 +222,14 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             );
             return;
         }
-
-        if (storedPlayerTeam.teamStatus !== newTeamStatus) {
+        if (
+            storedPlayerTeam.teamStatus !== newTeamStatus ||
+            storedPlayerTeam.transferredTo !== transferredTo
+        ) {
             await this.updatePlayerTeamStatus(
                 storedPlayerTeam,
                 newTeamStatus,
+                transferredTo,
             );
         }
     }
@@ -272,11 +280,14 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
     private async updatePlayerTeamStatus(
         playerTeam: PlayerTeam,
         newStatus: TeamStatus,
+        transferredTo: string | null,
     ): Promise<void> {
         const { playerPhaseInput } = this;
         const oldStatus = playerTeam.teamStatus;
+        const oldTransferredTo = playerTeam.transferredTo;
 
         playerTeam.teamStatus = newStatus;
+        playerTeam.transferredTo = transferredTo;
 
         await this.playerTeamAuditRepository.save(
             this.playerEntityMapper.toPlayerTeamAuditEntity(
@@ -285,6 +296,16 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
                 "teamStatus",
                 oldStatus,
                 newStatus,
+            ),
+        );
+
+        await this.playerTeamAuditRepository.save(
+            this.playerEntityMapper.toPlayerTeamAuditEntity(
+                playerPhaseInput,
+                playerTeam.playerId,
+                "transferredTo",
+                oldTransferredTo,
+                transferredTo,
             ),
         );
 
@@ -297,7 +318,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         const { leagueSeasonTeamIdentifier } = this.context;
 
         if (latestPlayerTeamId === null) {
-            return TeamStatus.FREE_AGENT;
+            return TeamStatus.NOT_IN_SQUAD;
         }
 
         return latestPlayerTeamId === leagueSeasonTeamIdentifier.teamId

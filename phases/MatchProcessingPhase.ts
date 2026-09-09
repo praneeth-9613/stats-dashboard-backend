@@ -78,7 +78,8 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             await this.fixtureRepository.saveAll(fixturesToUpdate);
         }
 
-        let index = 0;
+        let statsIndex = 0;
+        let goalscorersIndex = 0;
 
         if (fixturesToProcess.length === 0) {
             this.updateEmptyStep("process_player_stats");
@@ -102,17 +103,17 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             this.updateStep(
                 scrapeStatus,
                 "process_player_stats",
-                ++index,
-                `Processing player stats ${index} of ${fixturesToProcess.length}`,
+                ++statsIndex,
+                `Processing player stats ${statsIndex} of ${fixturesToProcess.length}`,
             );
 
             await this.processMatchGoalscorers(latestMatch, matchId);
 
             this.updateStep(
                 scrapeStatus,
-                "process_player_stats",
-                ++index,
-                `Processing player stats ${index} of ${fixturesToProcess.length}`,
+                "process_goalscorers",
+                ++goalscorersIndex,
+                `Processing goal scorers ${goalscorersIndex} of ${fixturesToProcess.length}`,
             );
 
             await this.markFixtureAsProcessed(matchId, latestMatch);

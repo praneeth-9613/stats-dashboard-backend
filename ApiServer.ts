@@ -11,6 +11,9 @@ import { SyncOrchestrator } from "./SyncOrchestrator";
 import { FixtureResponseDto } from "./application/types/FixtureResponseDto";
 import { LeagueRepository } from "./persistence/repositories/LeagueRepository";
 import { LeagueSeasonTeamRepository } from "./persistence/repositories/LeagueSeasonTeamRepository";
+import { TeamRepository } from "./persistence/repositories/TeamRepository";
+import { UpdateTeamPayload } from "./application/types/TeamData";
+import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
 
 @injectable()
 export class ApiServer {
@@ -22,6 +25,12 @@ export class ApiServer {
     constructor(
         @inject(SyncOrchestrator)
         private readonly syncOrchestrator: SyncOrchestrator,
+
+        @inject(TeamRepository)
+        private readonly teamRepository: TeamRepository,
+
+        @inject(ReserveTeamRepository)
+        private readonly reserveTeamRepository: ReserveTeamRepository,
 
         @inject(LeagueRepository)
         private readonly leagueRepository: LeagueRepository,
@@ -96,12 +105,75 @@ export class ApiServer {
     }
 
     private registerRoutes(): void {
+        this.registerTeamRoutes();
         this.registerLeagueRoutes();
         this.registerScrapeRoutes();
         this.registerFixtureRoutes();
         this.registerPlayerRoutes();
         this.registerMatchRoutes();
         this.registerSeasonStatsRoutes();
+    }
+
+    private registerTeamRoutes(): void {
+        this.app.patch(
+            "/api/teams/:teamId",
+            async (req, res) => {
+                try {
+                    const teamId = Number(req.params.teamId);
+
+                    const {
+                        primaryColor,
+                        secondaryColor,
+                        gradientAngle,
+                        gradientStops,
+                        reserveTeams,
+                    }: UpdateTeamPayload = req.body;
+
+                    const team =
+                        await this.teamRepository.findByTeamId(teamId);
+
+                    if (!team) {
+                        res.status(404).json({
+                            message: "Team not found",
+                        });
+                        return;
+                    }
+
+                    if (primaryColor !== undefined) {
+                        team.primaryColor = primaryColor;
+                    }
+
+                    if (secondaryColor !== undefined) {
+                        team.secondaryColor = secondaryColor;
+                    }
+
+                    if (gradientAngle !== undefined) {
+                        team.gradientAngle = gradientAngle;
+                    }
+
+                    if (gradientStops !== undefined) {
+                        team.gradientStops = gradientStops;
+                    }
+
+                    if (reserveTeams !== undefined) {
+                        team.reserveTeams = await this.reserveTeamRepository.setReserveTeams(
+                            teamId,
+                            reserveTeams,
+                        );
+
+                    }
+                    await this.teamRepository.save(team);
+
+                    res.json(team);
+                } catch (error) {
+                    console.error("Failed to update team:", error);
+
+                    res.status(500).json({
+                        message: "Failed to update team",
+                    });
+                }
+            }
+        );
     }
 
     private registerLeagueRoutes(): void {

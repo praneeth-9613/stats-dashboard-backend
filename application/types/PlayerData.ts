@@ -68,4 +68,5 @@ export interface PlayerTeamData {
     isCaptain: boolean;
     teamStatus?: TeamStatus;
     contractEnd: string | null;
+    transferredTo: string | null;
 }

@@ -17,7 +17,9 @@ export class LeagueSeasonTeamRepository {
                 leagueId,
             },
             relations: {
-                team: true,
+                team: {
+                    reserveTeams: true,
+                },
             },
             order: {
                 team: {

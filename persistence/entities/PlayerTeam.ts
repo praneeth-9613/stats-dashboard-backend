@@ -11,7 +11,6 @@ import { LeagueSeasonTeam } from "./LeagueSeasonTeam";
 
 export enum TeamStatus {
     TRANSFERRED_OUT = "TRANSFERRED_OUT",
-    FREE_AGENT = "FREE_AGENT",
     NOT_IN_SQUAD = "NOT_IN_SQUAD",
     CURRENT = "CURRENT",
     RESERVE = "RESERVE"
@@ -40,12 +39,18 @@ export class PlayerTeam {
     @Column({ type: "boolean" })
     isCaptain!: boolean;
 
+    @Column({ type: "boolean" })
+    onLoan!: boolean;
+
     @Column({
         type: "enum",
         enum: TeamStatus,
         default: TeamStatus.CURRENT,
     })
     teamStatus!: TeamStatus;
+
+    @Column({ type: "varchar", nullable: true })
+    transferredTo!: string | null;
 
     @UpdateDateColumn()
     updatedAt!: Date;

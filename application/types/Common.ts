@@ -7,7 +7,7 @@ export type ScrapePhase =
     | "fixtures"
     | "match_processing"
     | "season_stats"
-    | "academy_players";
+    | "non_squad_players";
 
 export interface ScrapeStatus {
     running: boolean;

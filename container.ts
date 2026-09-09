@@ -21,6 +21,8 @@ import { Team } from "./persistence/entities/Team";
 import { TeamRepository } from "./persistence/repositories/TeamRepository";
 import { LeagueSeasonTeam } from "./persistence/entities/LeagueSeasonTeam";
 import { LeagueSeasonTeamRepository } from "./persistence/repositories/LeagueSeasonTeamRepository";
+import { ReserveTeam } from "./persistence/entities/ReserveTeam";
+import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
 
 // repositories
 container.register(TOKENS.PlayerOrmRepository, {
@@ -78,6 +80,13 @@ container.register(TOKENS.TeamOrmRepository, {
 });
 
 container.registerSingleton(TeamRepository);
+
+container.register(TOKENS.ReserveTeamOrmRepository, {
+    useFactory: (container) =>
+        AppDataSource.getRepository(ReserveTeam),
+});
+
+container.registerSingleton(ReserveTeamRepository);
 
 container.register(TOKENS.LeagueSeasonTeamOrmRepository, {
     useFactory: (container) =>

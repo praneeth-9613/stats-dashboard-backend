@@ -8,5 +8,6 @@ export const TOKENS = {
     LeagueSeasonTeamOrmRepository: "LeagueSeasonTeamOrmRepository",
     LeagueOrmRepository: "LeagueOrmRepository",
     TeamOrmRepository: "TeamOrmRepository",
+    ReserveTeamOrmRepository: "ReserveTeamOrmRepository",
     SyncOrchestrator: "SyncOrchestrator"
 };
