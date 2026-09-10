@@ -15,6 +15,7 @@ import { TeamRepository } from "./persistence/repositories/TeamRepository";
 import { UpdateTeamPayload } from "./application/types/TeamData";
 import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
 import { LeagueSeasonSeeder } from "./LeagueSeasonSeeder";
+import cors from "cors";
 
 @injectable()
 export class ApiServer {
@@ -55,6 +56,12 @@ export class ApiServer {
         console.log("Database connected");
 
         this.app.use(express.json());
+
+        this.app.use(
+            cors({
+                origin: process.env.FRONTEND_URL,
+            }),
+        );
 
         this.registerRoutes();
 
