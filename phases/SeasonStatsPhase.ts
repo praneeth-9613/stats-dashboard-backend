@@ -49,7 +49,7 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats" | "p
             teamName,
         } = this.context;
 
-        const SEASON_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "season-stats.json");
+        const SEASON_STATS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "season-stats.json");
 
         const seasonStats: SeasonStats = {
             team: teamName,
