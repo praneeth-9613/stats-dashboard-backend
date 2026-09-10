@@ -8,7 +8,7 @@ import { LeagueSeasonTeamRepository } from "./persistence/repositories/LeagueSea
 import { LeagueSeasonTeam } from "./persistence/entities/LeagueSeasonTeam";
 import { LeagueRepository } from "./persistence/repositories/LeagueRepository";
 import { inject, injectable } from "tsyringe";
-import { AppDataSource } from "./persistence/data-source";
+import { loadTeamColors } from "./helpers/StorageHelpers";
 
 @injectable()
 export class LeagueSeasonSeeder {
@@ -26,8 +26,6 @@ export class LeagueSeasonSeeder {
     async run(seedContext: { leagueId: number, season: string }) {
 
         try {
-            await AppDataSource.initialize();
-
             const { leagueId, season } = seedContext;
 
             const LEAGUE_URL = `https://www.fotmob.com/api/data/leagues?id=${leagueId}&ccode3=IND&season=${encodeURIComponent(season)}`;
@@ -43,13 +41,28 @@ export class LeagueSeasonSeeder {
 
             const teams: TeamData[] = leagueResponse.table[0].data.table.all.map(team => { return { id: team.id, name: team.name } });
 
-            const teamEntities: Team[] = teams.map(team => this.teamMapper.toTeamEntity(team));
+            const TEAM_COLORS = loadTeamColors(season, leagueId);
+
+            const teamEntities: Team[] = teams.map(team => {
+                if (TEAM_COLORS) {
+                    const colors = TEAM_COLORS[team.id];
+
+                    if (colors) {
+                        team.primaryColor = colors.primaryColor;
+                        team.secondaryColor = colors.secondaryColor;
+                        team.kitPrimaryColor = colors.kitPrimaryColor;
+                        team.kitSecondaryColor = colors.kitSecondaryColor;
+                    }
+                }
+
+                return this.teamMapper.toTeamEntity(team);
+            });
 
             const leagueSeasonTeamEntities: LeagueSeasonTeam[] = teams.map(team => this.teamMapper.toLeagueSeasonTeamEntity(team.id, leagueId, season));
 
             await this.teamRepository.saveAll(teamEntities);
 
-            this.leagueSeasonTeamRepository.saveAll(leagueSeasonTeamEntities)
+            await this.leagueSeasonTeamRepository.saveAll(leagueSeasonTeamEntities)
 
         }
         catch (err) {

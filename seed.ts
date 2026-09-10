@@ -10,8 +10,6 @@ async function seed() {
 
         const seedContext = { leagueId, season };
 
-        console.log(seedContext)
-
         const leagueSeasonSeeder = container.resolve(LeagueSeasonSeeder);
 
         leagueSeasonSeeder.run(seedContext);

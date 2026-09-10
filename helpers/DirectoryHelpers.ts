@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export function getDataDirectory(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): string {
-    return path.join(__dirname, "..", "data", `${leagueSeasonTeamIdentifier.season}`, `${leagueSeasonTeamIdentifier.leagueId}`, `${leagueSeasonTeamIdentifier.teamId}`);
+    return path.join(__dirname, "..", "data", `${leagueSeasonTeamIdentifier.season}`, `${leagueSeasonTeamIdentifier.leagueId}`, leagueSeasonTeamIdentifier.teamId ? `${leagueSeasonTeamIdentifier.teamId}` : ``);
 }
 
 export function ensureDataDirectory(season: string, leagueId: number, teamId: number): void {

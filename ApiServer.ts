@@ -14,6 +14,7 @@ import { LeagueSeasonTeamRepository } from "./persistence/repositories/LeagueSea
 import { TeamRepository } from "./persistence/repositories/TeamRepository";
 import { UpdateTeamPayload } from "./application/types/TeamData";
 import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
+import { LeagueSeasonSeeder } from "./LeagueSeasonSeeder";
 
 @injectable()
 export class ApiServer {
@@ -25,6 +26,9 @@ export class ApiServer {
     constructor(
         @inject(SyncOrchestrator)
         private readonly syncOrchestrator: SyncOrchestrator,
+
+        @inject(LeagueSeasonSeeder)
+        private readonly leagueSeasonSeeder: LeagueSeasonSeeder,
 
         @inject(TeamRepository)
         private readonly teamRepository: TeamRepository,
@@ -105,6 +109,7 @@ export class ApiServer {
     }
 
     private registerRoutes(): void {
+        this.registerSeedRoutes();
         this.registerTeamRoutes();
         this.registerLeagueRoutes();
         this.registerScrapeRoutes();
@@ -112,6 +117,46 @@ export class ApiServer {
         this.registerPlayerRoutes();
         this.registerMatchRoutes();
         this.registerSeasonStatsRoutes();
+    }
+
+    private registerSeedRoutes(): void {
+        this.app.post(
+            "/api/seed",
+            async (req, res) => {
+                try {
+                    const { leagueId, season } = req.body;
+
+                    if (
+                        typeof leagueId !== "number" ||
+                        typeof season !== "string"
+                    ) {
+                        res.status(400).json({
+                            message:
+                                "leagueId and season are required",
+                        });
+                        return;
+                    }
+
+                    await this.leagueSeasonSeeder.run({
+                        leagueId,
+                        season,
+                    });
+
+                    res.json({
+                        message: "Seed completed successfully",
+                    });
+                } catch (error) {
+                    console.error(
+                        "Seed failed:",
+                        error,
+                    );
+
+                    res.status(500).json({
+                        message: "Seed failed",
+                    });
+                }
+            },
+        );
     }
 
     private registerTeamRoutes(): void {
@@ -124,6 +169,8 @@ export class ApiServer {
                     const {
                         primaryColor,
                         secondaryColor,
+                        kitPrimaryColor,
+                        kitSecondaryColor,
                         gradientAngle,
                         gradientStops,
                         reserveTeams,
@@ -145,6 +192,14 @@ export class ApiServer {
 
                     if (secondaryColor !== undefined) {
                         team.secondaryColor = secondaryColor;
+                    }
+
+                    if (kitPrimaryColor !== undefined) {
+                        team.kitPrimaryColor = kitPrimaryColor;
+                    }
+
+                    if (kitSecondaryColor !== undefined) {
+                        team.kitSecondaryColor = kitSecondaryColor;
                     }
 
                     if (gradientAngle !== undefined) {

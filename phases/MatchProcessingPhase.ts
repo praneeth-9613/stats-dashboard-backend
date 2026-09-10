@@ -130,7 +130,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
 
         // API Data
         const latestMatch = await fetchMatch(matchId);
-        const latestMatchData = this.matchMapper.toMatchPlayerStats(latestMatch, matchId, teamName, leagueSeasonTeamIdentifier);
+        const latestMatchData = this.matchMapper.toMatchPlayerStats(latestMatch, matchId, leagueSeasonTeamIdentifier);
 
         // Stored Data (JSON)
         const storedMatches = loadMatchesPlayerStats(leagueSeasonTeamIdentifier);

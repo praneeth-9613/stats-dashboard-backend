@@ -1,11 +1,17 @@
 import { TeamStatus } from "../../persistence/entities/PlayerTeam";
 
+export type PlayerDetailedPositionData = {
+    class?: PositionClass,
+    list: PlayerPositionData[]
+};
+
+export type PositionClass = "Keepers" | "Defenders" | "Midfielders" | "Attackers";
+
+export type PlayerPositionData = { label: string, key: string, isMainPosition: boolean };
+
 export interface PlayerData {
     profile: PlayerProfile,
-    positions: {
-        class?: PositionClass,
-        list: PlayerPositionData[]
-    },
+    positions: PlayerDetailedPositionData,
     injury: PlayerInjuryInformation | null,
     team: PlayerTeamData | null
 }
@@ -32,7 +38,7 @@ export const PLAYER_INFORMATION_KEYS = [
     "height",
     "preferred_foot",
     "transfer_value"
-    
+
 ] as const;
 
 export type PlayerInformationKey =
@@ -48,10 +54,6 @@ export const PLAYER_INFORMATION_MAP: Record<
     "Preferred foot": "preferred_foot",
     "Market value": "transfer_value",
 };
-
-export type PositionClass = "Keepers" | "Defenders" | "Midfielders" | "Attackers";
-
-export type PlayerPositionData = { label: string, key: string, isMainPosition: boolean };
 
 export interface PlayerInjuryInformation {
     name: string;

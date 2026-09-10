@@ -5,7 +5,7 @@ import {
     PrimaryColumn,
     UpdateDateColumn,
 } from "typeorm";
-import { PlayerInjuryInformation, PlayerPositionData } from "../../application/types/PlayerData";
+import { PlayerDetailedPositionData, PlayerInjuryInformation, PlayerPositionData } from "../../application/types/PlayerData";
 import { PlayerTeam } from "./PlayerTeam";
 
 @Entity("player")
@@ -28,11 +28,14 @@ export class Player {
     @Column({ type: "varchar", nullable: true })
     preferredFoot!: string | null;
 
+    @Column({ type: "varchar", nullable: true })
+    birthDate!: string | null;
+
     @Column({ type: "integer", nullable: true })
     age!: number | null;
 
     @Column({ type: "jsonb", nullable: true })
-    positions!: PlayerPositionData[] | null;
+    positions!: PlayerDetailedPositionData | null;
 
     @Column({ type: "jsonb", nullable: true })
     injury!: PlayerInjuryInformation | null;

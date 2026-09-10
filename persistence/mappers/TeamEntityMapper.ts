@@ -10,6 +10,8 @@ export class TeamMapper {
         entity.name = team.name;
         entity.primaryColor = team.primaryColor ?? null;
         entity.secondaryColor = team.secondaryColor ?? null;
+        entity.kitPrimaryColor = team.kitPrimaryColor ?? null;
+        entity.kitSecondaryColor = team.kitSecondaryColor ?? null;
 
         return entity;
     }

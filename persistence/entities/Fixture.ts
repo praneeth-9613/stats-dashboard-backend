@@ -32,6 +32,12 @@ export class Fixture {
     @Column({ type: "varchar" })
     competition!: string;
 
+    @Column({ type: "integer" })
+    competitionId!: number;
+
+    @Column({ type: "varchar", nullable: true })
+    competitionStage!: string | null;
+
     @Column({ type: "varchar" })
     homeAway!: string;
 

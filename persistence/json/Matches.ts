@@ -22,6 +22,7 @@ export interface MatchPlayerStats {
 export interface MatchPlayer {
     playerId: number;
     name: string;
+    teamId: number;
     teamName: string;
     isGoalkeeper?: boolean;
     stats?: MatchStatSectionResponse[];

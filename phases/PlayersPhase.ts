@@ -16,6 +16,7 @@ import { PlayerAuditRepository } from "../persistence/repositories/PlayerAuditRe
 import { PlayerData, PlayerTeamData } from "../application/types/PlayerData";
 import { Player } from "../persistence/entities/Player";
 import { injectable } from "tsyringe";
+import { TeamRepository } from "../persistence/repositories/TeamRepository";
 
 @injectable()
 export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "remove_players"> {
@@ -28,7 +29,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         "remove_players",
     ] as const;
 
-    constructor(protected context: SyncContext, private readonly playerPhaseInput: PlayerPhaseInput, private readonly playerMapper: PlayerMapper, private readonly playerEntityMapper: PlayerEntityMapper, private readonly playerRepository: PlayerRepository, private readonly playerTeamRepository: PlayerTeamRepository, private readonly playerAuditRepository: PlayerAuditRepository, private readonly playerTeamAuditRepository: PlayerTeamAuditRepository, private readonly playerComparator: PlayerComparator, private readonly playerTeamComparator: PlayerTeamComparator) {
+    constructor(protected context: SyncContext, private readonly playerPhaseInput: PlayerPhaseInput, private readonly playerMapper: PlayerMapper, private readonly playerEntityMapper: PlayerEntityMapper, private readonly teamRepository: TeamRepository, private readonly playerRepository: PlayerRepository, private readonly playerTeamRepository: PlayerTeamRepository, private readonly playerAuditRepository: PlayerAuditRepository, private readonly playerTeamAuditRepository: PlayerTeamAuditRepository, private readonly playerComparator: PlayerComparator, private readonly playerTeamComparator: PlayerTeamComparator) {
         super(context);
 
         const {
@@ -202,7 +203,12 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         const { leagueSeasonTeamIdentifier } = this.context;
 
         if (storedPlayerTeam === null) {
-            await this.createPlayerTeam(playerId, latestPlayerTeam);
+            const teamExists = await this.teamRepository.findByTeamId(latestPlayerTeam?.teamId ?? 0);
+
+            if (teamExists) {
+                await this.createPlayerTeam(playerId, latestPlayerTeam);
+            }
+            
             return;
         }
 

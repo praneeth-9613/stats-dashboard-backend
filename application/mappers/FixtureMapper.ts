@@ -12,6 +12,8 @@ export class FixtureMapper {
                 leagueId: leagueSeasonTeamIdentifier.leagueId,
                 teamId: leagueSeasonTeamIdentifier.teamId ?? 0,
                 competition: fixture.tournament.name,
+                competitionId: fixture.tournament.leagueId,
+                competitionStage: fixture.tournament.stage ?? null,
                 homeAway: (fixture.home.id === leagueSeasonTeamIdentifier.teamId) ? "home" : "away",
                 completed: fixture.status.finished,
                 fixtureDate: fixture.status.utcTime,

@@ -6,7 +6,7 @@ import { LeagueSeasonTeamIdentifier } from "../types/PhaseInput";
 
 export class MatchMapper {
 
-    toMatchPlayerStats(matchResponse: MatchResponse, matchId: number, teamName: string, leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchPlayerStats {
+    toMatchPlayerStats(matchResponse: MatchResponse, matchId: number, leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchPlayerStats {
 
         const playerStats = Object.values(matchResponse.content?.playerStats ?? {});
 
@@ -18,7 +18,7 @@ export class MatchMapper {
         for (const player of playerStats) {
             const matchPlayer = this.toMatchPlayer(player)
 
-            if (matchPlayer.teamName !== teamName) continue;
+            if (matchPlayer.teamId !== leagueSeasonTeamIdentifier.teamId) continue;
 
             match.playerStats = {
                 ...match.playerStats,
@@ -34,6 +34,7 @@ export class MatchMapper {
         return {
             playerId: matchPlayerResponse.id,
             name: matchPlayerResponse.name,
+            teamId: matchPlayerResponse.teamId,
             teamName: matchPlayerResponse.teamName,
             isGoalkeeper: matchPlayerResponse.isGoalkeeper,
             stats: matchPlayerResponse.stats,
@@ -57,9 +58,9 @@ export class MatchMapper {
 
         return {
             id: playerOfTheMatchResponse.id,
-            name: playerOfTheMatchResponse.name.fullName,
+            name: playerOfTheMatchResponse.name?.fullName,
             teamName: playerOfTheMatchResponse.teamName,
-            rating: Number(playerOfTheMatchResponse.rating.num)
+            rating: Number(playerOfTheMatchResponse.rating?.num)
         }
     }
 

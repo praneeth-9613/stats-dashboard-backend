@@ -12,6 +12,8 @@ export class FixtureEntityMapper {
         fixture.teamId = fixtureData.teamId;
         fixture.homeAway = fixtureData.homeAway;
         fixture.competition = fixtureData.competition;
+        fixture.competitionId = fixtureData.competitionId;
+        fixture.competitionStage = fixtureData.competitionStage;
         fixture.homeId = fixtureData.homeId;
         fixture.awayId = fixtureData.awayId;
         fixture.homeName = fixtureData.homeName;

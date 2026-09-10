@@ -17,6 +17,12 @@ export class Team {
     @Column({ nullable: true, type: 'varchar' })
     secondaryColor!: string | null;
 
+    @Column({ nullable: true, type: 'varchar' })
+    kitPrimaryColor!: string | null;
+
+    @Column({ nullable: true, type: 'varchar' })
+    kitSecondaryColor!: string | null;
+
     @Column({ type: "integer", default: 180 })
     gradientAngle!: number | null;
 

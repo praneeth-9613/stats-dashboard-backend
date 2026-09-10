@@ -9,6 +9,10 @@ export interface FixtureData {
 
     competition: string;
 
+    competitionId: number;
+
+    competitionStage: string | null;
+
     homeAway: "home" | "away";
 
     completed: boolean;

@@ -10,6 +10,7 @@ import { PlayerEntityMapper } from "../persistence/mappers/PlayerEntityMapper";
 import { PlayerAuditRepository } from "../persistence/repositories/PlayerAuditRepository";
 import { PlayerTeamComparator } from "../comparators/PlayerTeamComparator";
 import { PlayerTeamAuditRepository } from "../persistence/repositories/PlayerTeamAuditRepository";
+import { TeamRepository } from "../persistence/repositories/TeamRepository";
 
 @injectable()
 export class PlayersPhaseFactory {
@@ -18,6 +19,8 @@ export class PlayersPhaseFactory {
         private readonly playerMapper: PlayerMapper,
         @inject(PlayerEntityMapper)
         private readonly playerEntityMapper: PlayerEntityMapper,
+        @inject(TeamRepository)
+        private readonly teamRepository: TeamRepository,
         @inject(PlayerRepository)
         private readonly playerRepository: PlayerRepository,
         @inject(PlayerTeamRepository)
@@ -38,6 +41,7 @@ export class PlayersPhaseFactory {
             playerPhaseInput,
             this.playerMapper,
             this.playerEntityMapper,
+            this.teamRepository,
             this.playerRepository,
             this.playerTeamRepository,
             this.playerAuditRepository,

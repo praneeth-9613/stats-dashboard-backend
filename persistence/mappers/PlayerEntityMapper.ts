@@ -1,6 +1,6 @@
 import { injectable } from "tsyringe";
 import { LeagueSeasonTeamIdentifier, PlayerPhaseInput } from "../../application/types/PhaseInput";
-import { PlayerInjuryInformation, PlayerPositionData, PlayerProfile, PlayerTeamData, PositionClass } from "../../application/types/PlayerData";
+import { PlayerDetailedPositionData, PlayerInjuryInformation, PlayerPositionData, PlayerProfile, PlayerTeamData, PositionClass } from "../../application/types/PlayerData";
 import { Player } from "../entities/Player";
 import { PlayerAudit } from "../entities/PlayerAudit";
 import { PlayerTeam, TeamStatus } from "../entities/PlayerTeam";
@@ -8,20 +8,18 @@ import { PlayerTeamAudit } from "../entities/PlayerTeamAudit";
 
 @injectable()
 export class PlayerEntityMapper {
-    toPlayerEntity(playerProfile: PlayerProfile, positions: {
-        class?: PositionClass,
-        list: PlayerPositionData[]
-    }, injury: PlayerInjuryInformation | null): Player {
+    toPlayerEntity(playerProfile: PlayerProfile, positions: PlayerDetailedPositionData, injury: PlayerInjuryInformation | null): Player {
         const player = new Player();
 
         player.playerId = playerProfile.id;
         player.name = playerProfile.name;
         player.age = Number(playerProfile.age);
+        player.birthDate = playerProfile.birthDate;
         player.height = playerProfile.height ?? "";
         player.country = playerProfile.country ?? "";
         player.transferValue = playerProfile.transfer_value ?? "";
         player.preferredFoot = playerProfile.preferred_foot ?? "Both";
-        player.positions = positions.list;
+        player.positions = positions;
         player.injury = injury;
 
         return player;
