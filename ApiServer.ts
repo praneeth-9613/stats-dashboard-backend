@@ -55,13 +55,13 @@ export class ApiServer {
 
         console.log("Database connected");
 
-        this.app.use(express.json());
-
         this.app.use(
             cors({
                 origin: process.env.FRONTEND_URL,
             }),
         );
+
+        this.app.use(express.json());
 
         this.registerRoutes();
 
