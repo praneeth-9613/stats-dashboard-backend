@@ -1,0 +1,122 @@
+{
+    "9825": {
+        "primaryColor": "#DB0007",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#E30613",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "10252": {
+        "primaryColor": "#670E36",
+        "secondaryColor": "#6EC6E8",
+        "kitPrimaryColor": "#670E36",
+        "kitSecondaryColor": "#6EC6E8"
+    },
+    "8678": {
+        "primaryColor": "#DA291C",
+        "secondaryColor": "#000000",
+        "kitPrimaryColor": "#D71920",
+        "kitSecondaryColor": "#000000"
+    },
+    "9937": {
+        "primaryColor": "#E30613",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#C8102E",
+        "kitSecondaryColor": "#F2C94C"
+    },
+    "10204": {
+        "primaryColor": "#0057B8",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#0057B8",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "8455": {
+        "primaryColor": "#034694",
+        "secondaryColor": "#D4AF37",
+        "kitPrimaryColor": "#034694",
+        "kitSecondaryColor": "#D4AF37"
+    },
+    "8669": {
+        "primaryColor": "#00AEEF",
+        "secondaryColor": "#1D3557",
+        "kitPrimaryColor": "#4A90C2",
+        "kitSecondaryColor": "#1D3557"
+    },
+    "9826": {
+        "primaryColor": "#1B458F",
+        "secondaryColor": "#C8102E",
+        "kitPrimaryColor": "#FFFFFF",
+        "kitSecondaryColor": "#C8102E"
+    },
+    "8668": {
+        "primaryColor": "#003399",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#003399",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "9879": {
+        "primaryColor": "#FFFFFF",
+        "secondaryColor": "#000000",
+        "kitPrimaryColor": "#FFFFFF",
+        "kitSecondaryColor": "#000000"
+    },
+    "8667": {
+        "primaryColor": "#F5A800",
+        "secondaryColor": "#000000",
+        "kitPrimaryColor": "#F5A800",
+        "kitSecondaryColor": "#000000"
+    },
+    "9902": {
+        "primaryColor": "#0057A8",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#0057A8",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "8463": {
+        "primaryColor": "#FFCD00",
+        "secondaryColor": "#1D428A",
+        "kitPrimaryColor": "#FFFFFF",
+        "kitSecondaryColor": "#1D428A"
+    },
+    "8650": {
+        "primaryColor": "#C8102E",
+        "secondaryColor": "#00B2A9",
+        "kitPrimaryColor": "#8B1E2D",
+        "kitSecondaryColor": "#F6EB61"
+    },
+    "8456": {
+        "primaryColor": "#6CABDD",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#6CADDF",
+        "kitSecondaryColor": "#DDEFFF"
+    },
+    "10260": {
+        "primaryColor": "#DA291C",
+        "secondaryColor": "#000000",
+        "kitPrimaryColor": "#DA291C",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "10261": {
+        "primaryColor": "#000000",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#000000",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "10203": {
+        "primaryColor": "#E53233",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#E53233",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "8472": {
+        "primaryColor": "#EB172B",
+        "secondaryColor": "#000000",
+        "kitPrimaryColor": "#D71920",
+        "kitSecondaryColor": "#FFFFFF"
+    },
+    "8586": {
+        "primaryColor": "#132257",
+        "secondaryColor": "#FFFFFF",
+        "kitPrimaryColor": "#FFFFFF",
+        "kitSecondaryColor": "#132257"
+    }
+}

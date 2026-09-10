@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import fsp from "fs/promises";
 
 import { fileURLToPath } from "url";
 import { LeagueSeasonTeamIdentifier } from "../application/types/PhaseInput";
@@ -8,13 +7,13 @@ import { LeagueSeasonTeamIdentifier } from "../application/types/PhaseInput";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function getDataDirectory(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): string {
-    return path.join(__dirname, "..", "data", `${leagueSeasonTeamIdentifier.season}`, `${leagueSeasonTeamIdentifier.leagueId}`, leagueSeasonTeamIdentifier.teamId ? `${leagueSeasonTeamIdentifier.teamId}` : ``);
+export function getDataDirectory(directoryName: string, leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): string {
+    return path.join(__dirname, "..", directoryName, `${leagueSeasonTeamIdentifier.season}`, `${leagueSeasonTeamIdentifier.leagueId}`, leagueSeasonTeamIdentifier.teamId ? `${leagueSeasonTeamIdentifier.teamId}` : ``);
 }
 
-export function ensureDataDirectory(season: string, leagueId: number, teamId: number): void {
+export function ensureDataDirectory(directoryName: string, season: string, leagueId: number, teamId: number): void {
 
-    const DATA_DIR = path.join(__dirname, "..", "data", `${season}`, `${leagueId}`, `${teamId}`);
+    const DATA_DIR = path.join(__dirname, "..", directoryName, `${season}`, `${leagueId}`, `${teamId}`);
 
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, {

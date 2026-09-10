@@ -1,12 +1,13 @@
 {
-  "name": "arsenal",
+  "name": "stats-dashboard-backend",
   "version": "1.0.0",
   "main": "server.ts",
   "type": "module",
   "scripts": {
+    "start": "tsx server.ts",
     "scrape": "tsx scrape.ts",
-    "server": "tsx server.ts",
-    "seed": "tsx seed.ts"
+    "seed": "tsx seed.ts",
+    "server": "tsx server.ts"
   },
   "author": "",
   "license": "ISC",

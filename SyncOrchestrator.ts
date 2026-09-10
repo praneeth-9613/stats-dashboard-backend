@@ -48,6 +48,7 @@ export class SyncOrchestrator {
         );
 
         ensureDataDirectory(
+            "data",
             season,
             leagueId,
             teamId,

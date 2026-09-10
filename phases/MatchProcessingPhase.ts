@@ -126,7 +126,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     private async processMatchPlayerStats(matchId: number): Promise<void> {
         const { leagueSeasonTeamIdentifier, teamName } = this.context;
 
-        const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "matches-player-stats.json");
+        const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "matches-player-stats.json");
 
         // API Data
         const latestMatch = await fetchMatch(matchId);
@@ -199,7 +199,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     private async processMatchGoalscorers(latestMatch: MatchResponse, matchId: number): Promise<void> {
         const { leagueSeasonTeamIdentifier } = this.context;
 
-        const MATCHES_GOALSCORERS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "matches-goalscorers.json");
+        const MATCHES_GOALSCORERS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "matches-goalscorers.json");
 
         // API Data
         const latestMatchData = this.matchMapper.toMatchGoalscorers(latestMatch, matchId, leagueSeasonTeamIdentifier);

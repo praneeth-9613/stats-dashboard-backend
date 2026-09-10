@@ -6,7 +6,7 @@ import { LeagueSeasonTeamIdentifier } from "../application/types/PhaseInput";
 import { TeamColors } from "../application/types/TeamData";
 
 export function loadMatchesPlayerStats(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchesPlayerStats {
-    const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "matches-player-stats.json");
+    const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "matches-player-stats.json");
 
     const matches =
         loadJson<MatchesPlayerStats>(
@@ -18,7 +18,7 @@ export function loadMatchesPlayerStats(leagueSeasonTeamIdentifier: LeagueSeasonT
 }
 
 export function loadMatchesGoalScorers(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchesGoalscorers {
-    const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "matches-goalscorers.json");
+    const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "matches-goalscorers.json");
 
     const matches =
         loadJson<MatchesPlayerStats>(
@@ -30,7 +30,7 @@ export function loadMatchesGoalScorers(leagueSeasonTeamIdentifier: LeagueSeasonT
 }
 
 export function loadTeamSeasonStats(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): SeasonStats | undefined {
-    const TEAM_SEASON_STATS_FILE = path.join(getDataDirectory(leagueSeasonTeamIdentifier), "season-stats.json");
+    const TEAM_SEASON_STATS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "season-stats.json");
 
     const seasonStats =
         loadJson<SeasonStats | undefined>(
@@ -42,7 +42,7 @@ export function loadTeamSeasonStats(leagueSeasonTeamIdentifier: LeagueSeasonTeam
 }
 
 export function loadTeamColors(season: string, leagueId: number): Record<string, TeamColors> {
-    const TEAM_COLORS_FILE = path.join(getDataDirectory({ season, leagueId }), "team-colors.json");
+    const TEAM_COLORS_FILE = path.join(getDataDirectory("seedData", { season, leagueId }), "team-colors.json");
 
     const teamColors =
         loadJson<Record<string, TeamColors>>(
