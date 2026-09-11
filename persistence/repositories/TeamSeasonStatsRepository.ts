@@ -15,6 +15,10 @@ export class TeamSeasonStatsRepository {
         return this.repository.findOneBy({ season: leagueSeasonTeamIdentifier.season, leagueId: leagueSeasonTeamIdentifier.leagueId, teamId: leagueSeasonTeamIdentifier.teamId });
     }
 
+    async findByLeagueSeason(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): Promise<TeamSeasonStats[]> {
+        return this.repository.findBy({ season: leagueSeasonTeamIdentifier.season, leagueId: leagueSeasonTeamIdentifier.leagueId });
+    }
+
     async save(teamSeasonStats: TeamSeasonStats): Promise<TeamSeasonStats | null> {
         return this.repository.save(teamSeasonStats);
     }

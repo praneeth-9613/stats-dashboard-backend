@@ -15,11 +15,9 @@ import { UpdateTeamPayload } from "./application/types/TeamData";
 import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
 import { LeagueSeasonSeeder } from "./LeagueSeasonSeeder";
 import cors from "cors";
-import { MatchGoalscorersRepository } from "./persistence/repositories/MatchGoalscorersRepository";
-import { MatchPlayerStatsRepository } from "./persistence/repositories/MatchPlayerStatsRepository";
-import { TeamSeasonStatsRepository } from "./persistence/repositories/TeamSeasonStatsRepository";
 import { MatchProcessingService } from "./service/MatchProcessingService";
 import { TeamResetService } from "./service/TeamResetService";
+import { SeasonStatsService } from "./service/SeasonStatsService";
 
 @injectable()
 export class ApiServer {
@@ -50,17 +48,17 @@ export class ApiServer {
         @inject(FixtureRepository)
         private readonly fixtureRepository: FixtureRepository,
 
-        @inject(TeamSeasonStatsRepository)
-        private readonly teamSeasonStatsRepository: TeamSeasonStatsRepository,
-
         @inject(PlayerService)
         private readonly playerService: PlayerService,
 
         @inject(MatchProcessingService)
         private readonly matchProcessingService: MatchProcessingService,
 
+        @inject(SeasonStatsService)
+        private readonly seasonStatsService: SeasonStatsService,
+
         @inject(TeamResetService)
-         private readonly teamResetService: TeamResetService,
+        private readonly teamResetService: TeamResetService,
     ) { }
 
     async start(): Promise<void> {
@@ -488,7 +486,26 @@ export class ApiServer {
                 const leagueId = Number(req.query.leagueId);
                 const teamId = Number(req.params.teamId);
 
-                const seasonStats = await this.teamSeasonStatsRepository.findByLeagueSeasonTeam({ season, leagueId, teamId });
+                const seasonStats = await this.seasonStatsService.findSeasonStatsForLeagueSeasonTeam({ season, leagueId, teamId });
+
+                if (!seasonStats) {
+                    res.json({});
+                    return;
+                }
+                res.json(seasonStats);
+            } catch (error) {
+                console.error("Failed to read season stats:", error);
+
+                res.status(200).json([]);
+            }
+        });
+
+        this.app.get("/api/season-stats", async (req, res) => {
+            try {
+                const season = String(req.query.season);
+                const leagueId = Number(req.query.leagueId);
+
+                const seasonStats = await this.seasonStatsService.findSeasonStatsForLeagueSeason({ season, leagueId });
 
                 if (!seasonStats) {
                     res.json({});

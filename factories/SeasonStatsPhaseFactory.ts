@@ -3,7 +3,7 @@ import { SyncContext } from "../application/types/Common";
 import { SeasonStatsMapper } from "../application/mappers/SeasonStatsMapper";
 import { SeasonStatsPhase } from "../phases/SeasonStatsPhase";
 import { MatchProcessingService } from "../service/MatchProcessingService";
-import { TeamSeasonStatsRepository } from "../persistence/repositories/TeamSeasonStatsRepository";
+import { SeasonStatsService } from "../service/SeasonStatsService";
 
 @injectable()
 export class SeasonStatsPhaseFactory {
@@ -12,8 +12,8 @@ export class SeasonStatsPhaseFactory {
         private readonly seasonStatsMapper: SeasonStatsMapper,
         @inject(MatchProcessingService)
         private readonly matchProcessingService: MatchProcessingService,
-        @inject(TeamSeasonStatsRepository)
-        private readonly teamSeasonStatsRepository: TeamSeasonStatsRepository,
+        @inject(SeasonStatsService)
+        private readonly seasonStatsService: SeasonStatsService,
     ) { }
 
     create(context: SyncContext): SeasonStatsPhase {
@@ -21,7 +21,7 @@ export class SeasonStatsPhaseFactory {
             context,
             this.seasonStatsMapper,
             this.matchProcessingService,
-            this.teamSeasonStatsRepository
+            this.seasonStatsService
         );
     }
 }

@@ -4,7 +4,7 @@ import { SyncContext } from "../application/types/Common";
 import { MatchProcessingService } from "../service/MatchProcessingService";
 import { TeamSeasonStats } from "../persistence/entities/TeamSeasonStats";
 import { MatchPlayerStats } from "../persistence/entities/MatchPlayerStats";
-import { TeamSeasonStatsRepository } from "../persistence/repositories/TeamSeasonStatsRepository";
+import { SeasonStatsService } from "../service/SeasonStatsService";
 
 export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
 
@@ -17,7 +17,7 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
         protected context: SyncContext,
         private readonly seasonStatsMapper: SeasonStatsMapper,
         private readonly matchProcessingService: MatchProcessingService,
-        private readonly teamSeasonStatsRepository: TeamSeasonStatsRepository
+        private readonly seasonStatsService: SeasonStatsService
     ) {
         super(context);
     }
@@ -69,7 +69,7 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
 
         teamSeasonStats.generatedAt = new Date().toISOString();
 
-        await this.teamSeasonStatsRepository.save(teamSeasonStats);
+        await this.seasonStatsService.saveSeasonStatsForLeagueSeasonTeam(teamSeasonStats);
     }
 
     async processTeamSeasonStats(matches: MatchPlayerStats[], teamSeasonStats: TeamSeasonStats) {
