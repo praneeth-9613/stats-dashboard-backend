@@ -7,6 +7,7 @@ import { MatchProcessingPhase } from "../phases/MatchProcessingPhase";
 import { MatchProcessingPhaseInput } from "../application/types/PhaseInput";
 import { MatchMapper } from "../application/mappers/MatchMapper";
 import { MatchComparator } from "../comparators/MatchComparator";
+import { MatchProcessingService } from "../service/MatchProcessingService";
 
 @injectable()
 export class MatchProcessingPhaseFactory {
@@ -15,6 +16,8 @@ export class MatchProcessingPhaseFactory {
         private readonly matchMapper: MatchMapper,
         @inject(MatchComparator)
         private readonly matchComparator: MatchComparator,
+        @inject(MatchProcessingService)
+        private readonly matchProcessingService: MatchProcessingService,
         @inject(FixtureEntityMapper)
         private readonly fixtureEntityMapper: FixtureEntityMapper,
         @inject(FixtureRepository)
@@ -29,6 +32,7 @@ export class MatchProcessingPhaseFactory {
             matchProcessingPhaseInput,
             this.matchMapper,
             this.matchComparator,
+            this.matchProcessingService,
             this.fixtureEntityMapper,
             this.fixtureRepository,
             this.fixtureAuditRepository

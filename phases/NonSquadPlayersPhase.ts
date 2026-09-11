@@ -1,12 +1,12 @@
 import { PlayerMapper } from "../application/mappers/PlayerMapper";
 import { SyncContext } from "../application/types/Common";
 import { fetchPlayer } from "../helpers/ApiHelpers";
-import { loadMatchesPlayerStats } from "../helpers/StorageHelpers";
 import { TeamStatus } from "../persistence/entities/PlayerTeam";
 import { PlayerEntityMapper } from "../persistence/mappers/PlayerEntityMapper";
 import { PlayerRepository } from "../persistence/repositories/PlayerRepository";
 import { PlayerTeamRepository } from "../persistence/repositories/PlayerTeamRepository";
 import { ReserveTeamRepository } from "../persistence/repositories/ReserveTeamRepository";
+import { MatchProcessingService } from "../service/MatchProcessingService";
 import { SyncPhase } from "./SyncPhase";
 
 export class NonSquadPlayersPhase extends SyncPhase<"check_players"> {
@@ -24,6 +24,7 @@ export class NonSquadPlayersPhase extends SyncPhase<"check_players"> {
         private readonly playerRepository: PlayerRepository,
         private readonly playerTeamRepository: PlayerTeamRepository,
         private readonly reserveTeamRepository: ReserveTeamRepository,
+        private readonly matchProcessingService: MatchProcessingService
     ) {
         super(context);
     }
@@ -32,14 +33,17 @@ export class NonSquadPlayersPhase extends SyncPhase<"check_players"> {
 
         const { leagueSeasonTeamIdentifier } = this.context;
 
-        const matchPlayerStats = loadMatchesPlayerStats(leagueSeasonTeamIdentifier);
+        const matchPlayerStatsByMatchId = await
+            this.matchProcessingService.findMatchPlayerStatsForLeagueSeasonTeam(
+                leagueSeasonTeamIdentifier
+            );
+
+        const matchesPlayerStats = Object.values(matchPlayerStatsByMatchId);
 
         const playerIds = new Set<number>();
 
-        for (const match of Object.values(matchPlayerStats)) {
-            for (const player of Object.values(match.playerStats ?? {})) {
-
-
+        for (const match of matchesPlayerStats) {
+            for (const player of Object.values(match.data ?? {})) {
                 const existing =
                     await this.playerTeamRepository.findByPlayerForLeagueSeasonTeam(
                         leagueSeasonTeamIdentifier,
@@ -130,6 +134,6 @@ export class NonSquadPlayersPhase extends SyncPhase<"check_players"> {
                 ? latestPlayerTeam?.teamName ?? null
                 : null;
 
-        await this.playerTeamRepository.save(this.playerEntityMapper.toPlayerTeamEntity(playerId, { teamId: leagueSeasonTeamIdentifier.teamId ?? 0, teamName: this.context.teamName, contractEnd: null, isCaptain: false, onLoan: latestPlayerTeam?.onLoan ?? false, shirt: (newTeamStatus === TeamStatus.TRANSFERRED_OUT  || newTeamStatus === TeamStatus.NOT_IN_SQUAD) ? null : latestPlayerTeam?.shirt, transferredTo }, leagueSeasonTeamIdentifier, newTeamStatus));
+        await this.playerTeamRepository.save(this.playerEntityMapper.toPlayerTeamEntity(playerId, { teamId: leagueSeasonTeamIdentifier.teamId ?? 0, teamName: this.context.teamName, contractEnd: null, isCaptain: false, onLoan: latestPlayerTeam?.onLoan ?? false, shirt: (newTeamStatus === TeamStatus.TRANSFERRED_OUT || newTeamStatus === TeamStatus.NOT_IN_SQUAD) ? null : latestPlayerTeam?.shirt, transferredTo }, leagueSeasonTeamIdentifier, newTeamStatus));
     }
 }

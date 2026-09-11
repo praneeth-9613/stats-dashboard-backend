@@ -3,7 +3,6 @@ import express from "express";
 import { newScrapeStatus, ScraperOptions, ScrapeStatus } from "./application/types/Common";
 import { AppDataSource } from "./persistence/data-source";
 import { FixtureRepository } from "./persistence/repositories/FixtureRepository";
-import { loadMatchesGoalScorers, loadMatchesPlayerStats, loadTeamSeasonStats } from "./helpers/StorageHelpers";
 import { PlayerService } from "./service/PlayerService";
 import { inject, injectable } from "tsyringe";
 import { LeagueSeasonTeamIdentifier } from "./application/types/PhaseInput";
@@ -16,6 +15,11 @@ import { UpdateTeamPayload } from "./application/types/TeamData";
 import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
 import { LeagueSeasonSeeder } from "./LeagueSeasonSeeder";
 import cors from "cors";
+import { MatchGoalscorersRepository } from "./persistence/repositories/MatchGoalscorersRepository";
+import { MatchPlayerStatsRepository } from "./persistence/repositories/MatchPlayerStatsRepository";
+import { TeamSeasonStatsRepository } from "./persistence/repositories/TeamSeasonStatsRepository";
+import { MatchProcessingService } from "./service/MatchProcessingService";
+import { TeamResetService } from "./service/TeamResetService";
 
 @injectable()
 export class ApiServer {
@@ -46,8 +50,17 @@ export class ApiServer {
         @inject(FixtureRepository)
         private readonly fixtureRepository: FixtureRepository,
 
+        @inject(TeamSeasonStatsRepository)
+        private readonly teamSeasonStatsRepository: TeamSeasonStatsRepository,
+
         @inject(PlayerService)
         private readonly playerService: PlayerService,
+
+        @inject(MatchProcessingService)
+        private readonly matchProcessingService: MatchProcessingService,
+
+        @inject(TeamResetService)
+         private readonly teamResetService: TeamResetService,
     ) { }
 
     async start(): Promise<void> {
@@ -160,6 +173,32 @@ export class ApiServer {
 
                     res.status(500).json({
                         message: "Seed failed",
+                    });
+                }
+            },
+        );
+
+        this.app.delete(
+            "/api/teams/:teamId/reset",
+            async (req, res) => {
+                try {
+                    const teamId = Number(req.params.teamId);
+                    const { leagueId, season } = req.query;
+
+                    await this.teamResetService.resetTeam({
+                        teamId,
+                        leagueId: Number(leagueId),
+                        season: String(season),
+                    });
+
+                    res.json({
+                        message: "Team data reset successfully",
+                    });
+                } catch (error) {
+                    console.error("Failed to reset team:", error);
+
+                    res.status(500).json({
+                        message: "Failed to reset team",
                     });
                 }
             },
@@ -293,7 +332,7 @@ export class ApiServer {
                     const fixtures =
                         await this.fixtureRepository.findByLeagueSeasonTeam(leagueSeasonTeam);
 
-                    const matchesGoalScorers = loadMatchesGoalScorers(leagueSeasonTeam);
+                    const matchesGoalScorers = await this.matchProcessingService.findMatchGoalscorersForLeagueSeasonTeam(leagueSeasonTeam);
 
                     const fixturesResponse: Record<number, FixtureResponseDto> = {};
 
@@ -301,8 +340,8 @@ export class ApiServer {
                         const fixtureResponse: FixtureResponseDto = { ...fixture }
 
                         if (fixture.matchId in matchesGoalScorers) {
-                            fixtureResponse.goalscorers = (matchesGoalScorers[fixture.matchId].goalscorers ?? null);
-                            fixtureResponse.playerOfTheMatch = (matchesGoalScorers[fixture.matchId].playerOfTheMatch ?? null);
+                            fixtureResponse.goalscorers = (matchesGoalScorers[fixture.matchId].data ?? null);
+                            fixtureResponse.playerOfTheMatch = (matchesGoalScorers[fixture.matchId].potm ?? null);
                         }
 
                         fixturesResponse[fixture.matchId] = fixtureResponse;
@@ -413,7 +452,7 @@ export class ApiServer {
                     teamId: Number(req.params.teamId),
                 };
 
-                const matchesPlayerStats = loadMatchesPlayerStats(leagueSeasonTeam);
+                const matchesPlayerStats = await this.matchProcessingService.findMatchPlayerStatsForLeagueSeasonTeam(leagueSeasonTeam);
 
                 res.json(matchesPlayerStats);
             } catch (error) {
@@ -430,7 +469,7 @@ export class ApiServer {
                     leagueId: Number(req.query.leagueId),
                     teamId: Number(req.params.teamId),
                 };
-                const matchesGoalScorers = loadMatchesGoalScorers(leagueSeasonTeam);
+                const matchesGoalScorers = await this.matchProcessingService.findMatchGoalscorersForLeagueSeasonTeam(leagueSeasonTeam);
 
                 res.json(matchesGoalScorers);
             } catch (error) {
@@ -449,7 +488,7 @@ export class ApiServer {
                 const leagueId = Number(req.query.leagueId);
                 const teamId = Number(req.params.teamId);
 
-                const seasonStats = loadTeamSeasonStats({ season, leagueId, teamId });
+                const seasonStats = await this.teamSeasonStatsRepository.findByLeagueSeasonTeam({ season, leagueId, teamId });
 
                 if (!seasonStats) {
                     res.json({});

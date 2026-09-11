@@ -1,7 +1,7 @@
 import { MatchPlayerResponse, MatchResponse } from "../../api/types/RawMatch"
 import { PlayerOfTheMatchResponse } from "../../api/types/RawMatchFacts";
 import { GoalEventResponse, MatchHeaderEventsResponse } from "../../api/types/RawMatchHeader";
-import { GoalEvent, MatchGoalscorers, MatchHeaderEvents, MatchPlayer, MatchPlayerStats } from "../../persistence/json/Matches"
+import { GoalEvent, MatchGoalscorers, MatchHeaderEvents, MatchPlayer, MatchPlayerStats } from "../types/Matches";
 import { LeagueSeasonTeamIdentifier } from "../types/PhaseInput";
 
 export class MatchMapper {

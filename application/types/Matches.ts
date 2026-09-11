@@ -1,8 +1,6 @@
 import { MatchStatSectionResponse } from "../../api/types/RawMatch";
-import { InfoBoxStadiumResponse, PlayerOfTheMatchResponse } from "../../api/types/RawMatchFacts";
+import { InfoBoxStadiumResponse } from "../../api/types/RawMatchFacts";
 import { LeagueSeasonTeamIdentifier } from "../../application/types/PhaseInput";
-
-export type MatchesPlayerStats = Record<string, MatchPlayerStats>
 
 export type PlayerOfTheMatch = {
     id: number;
@@ -28,8 +26,6 @@ export interface MatchPlayer {
     stats?: MatchStatSectionResponse[];
     shirtNumber?: string;
 }
-
-export type MatchesGoalscorers = Record<string, MatchGoalscorers>
 
 export interface MatchGoalscorers {
     matchId: number;

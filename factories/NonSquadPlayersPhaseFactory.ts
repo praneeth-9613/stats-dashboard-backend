@@ -6,6 +6,7 @@ import { PlayerTeamRepository } from "../persistence/repositories/PlayerTeamRepo
 import { ReserveTeamRepository } from "../persistence/repositories/ReserveTeamRepository";
 import { SyncContext } from "../application/types/Common";
 import { NonSquadPlayersPhase } from "../phases/NonSquadPlayersPhase";
+import { MatchProcessingService } from "../service/MatchProcessingService";
 
 @injectable()
 export class NonSquadPlayersPhaseFactory {
@@ -19,7 +20,9 @@ export class NonSquadPlayersPhaseFactory {
         @inject(PlayerTeamRepository)
         private readonly playerTeamRepository: PlayerTeamRepository,
         @inject(ReserveTeamRepository)
-        private readonly reserveTeamRepository: ReserveTeamRepository
+        private readonly reserveTeamRepository: ReserveTeamRepository,
+        @inject(MatchProcessingService)
+        private readonly matchProcessingService: MatchProcessingService,
     ) { }
 
     create(context: SyncContext): NonSquadPlayersPhase {
@@ -29,7 +32,8 @@ export class NonSquadPlayersPhaseFactory {
             this.playerEntityMapper,
             this.playerRepository,
             this.playerTeamRepository,
-            this.reserveTeamRepository
+            this.reserveTeamRepository,
+            this.matchProcessingService
         );
     }
 }

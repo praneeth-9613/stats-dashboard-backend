@@ -11,7 +11,6 @@ import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper"
 import { FixtureAuditRepository } from "../persistence/repositories/FixtureAuditRepository";
 import { FixtureComparator } from "../comparators/FixtureComparator";
 import { SyncPhase } from "./SyncPhase";
-import { loadMatchesPlayerStats } from "../helpers/StorageHelpers";
 
 export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtures" | "mark_for_processing_fixtures"> {
 

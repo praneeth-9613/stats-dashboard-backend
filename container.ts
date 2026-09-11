@@ -23,6 +23,12 @@ import { LeagueSeasonTeam } from "./persistence/entities/LeagueSeasonTeam";
 import { LeagueSeasonTeamRepository } from "./persistence/repositories/LeagueSeasonTeamRepository";
 import { ReserveTeam } from "./persistence/entities/ReserveTeam";
 import { ReserveTeamRepository } from "./persistence/repositories/ReserveTeamRepository";
+import { MatchPlayerStats } from "./persistence/entities/MatchPlayerStats";
+import { MatchPlayerStatsRepository } from "./persistence/repositories/MatchPlayerStatsRepository";
+import { MatchGoalscorers } from "./persistence/entities/MatchGoalscorers";
+import { MatchGoalscorersRepository } from "./persistence/repositories/MatchGoalscorersRepository";
+import { TeamSeasonStats } from "./persistence/entities/TeamSeasonStats";
+import { TeamSeasonStatsRepository } from "./persistence/repositories/TeamSeasonStatsRepository";
 
 // repositories
 container.register(TOKENS.PlayerOrmRepository, {
@@ -94,5 +100,26 @@ container.register(TOKENS.LeagueSeasonTeamOrmRepository, {
 });
 
 container.registerSingleton(LeagueSeasonTeamRepository);
+
+container.register(TOKENS.MatchPlayerStatsOrmRepository, {
+    useFactory: (container) =>
+        AppDataSource.getRepository(MatchPlayerStats),
+})
+
+container.registerSingleton(MatchPlayerStatsRepository);
+
+container.register(TOKENS.MatchGoalscorersOrmRepository, {
+    useFactory: (container) =>
+        AppDataSource.getRepository(MatchGoalscorers),
+})
+
+container.registerSingleton(MatchGoalscorersRepository);
+
+container.register(TOKENS.TeamSeasonStatsOrmRepository, {
+    useFactory: (container) =>
+        AppDataSource.getRepository(TeamSeasonStats),
+})
+
+container.registerSingleton(TeamSeasonStatsRepository);
 
 export { container };

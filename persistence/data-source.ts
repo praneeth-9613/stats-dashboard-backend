@@ -13,12 +13,15 @@ import { PlayerTeam } from "./entities/PlayerTeam";
 import { PlayerTeamAudit } from "./entities/PlayerTeamAudit";
 import { League } from "./entities/League";
 import { ReserveTeam } from "./entities/ReserveTeam";
+import { MatchPlayerStats } from "./entities/MatchPlayerStats";
+import { MatchGoalscorers } from "./entities/MatchGoalscorers";
+import { TeamSeasonStats } from "./entities/TeamSeasonStats";
 
 export const AppDataSource = new DataSource({
     type: "postgres",
     url: process.env.DATABASE_URL,
 
-    entities: [Team, ReserveTeam, LeagueSeasonTeam, Fixture, FixtureAudit, Player, PlayerAudit, PlayerTeam, PlayerTeamAudit, League],
+    entities: [Team, ReserveTeam, LeagueSeasonTeam, Fixture, FixtureAudit, Player, PlayerAudit, PlayerTeam, PlayerTeamAudit, League, MatchPlayerStats, MatchGoalscorers, TeamSeasonStats],
 
     migrations: [
         "persistence/migrations/*.ts",

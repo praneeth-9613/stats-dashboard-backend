@@ -1,13 +1,9 @@
-import path from "path";
 import { MatchResponse, MatchStatResponse } from "../api/types/RawMatch";
 import { MatchMapper } from "../application/mappers/MatchMapper";
 import { fetchMatch } from "../helpers/ApiHelpers";
-import { getDataDirectory, saveJson } from "../helpers/DirectoryHelpers";
-import { loadMatchesGoalScorers, loadMatchesPlayerStats } from "../helpers/StorageHelpers";
 import { MatchComparator } from "../comparators/MatchComparator";
 import { SyncPhase } from "./SyncPhase";
 import { SyncContext } from "../application/types/Common";
-import { MatchesGoalscorers, MatchesPlayerStats } from "../persistence/json/Matches";
 import { FixtureRepository } from "../persistence/repositories/FixtureRepository";
 import { FixtureStatus } from "../persistence/entities/Fixture";
 import { FixtureAudit } from "../persistence/entities/FixtureAudit";
@@ -15,6 +11,7 @@ import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper"
 import { FixtureAuditRepository } from "../persistence/repositories/FixtureAuditRepository";
 import { MatchProcessingPhaseInput } from "../application/types/PhaseInput";
 import { sleep } from "../helper";
+import { MatchProcessingService } from "../service/MatchProcessingService";
 
 export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "process_goalscorers"> {
 
@@ -29,6 +26,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
         private readonly matchProcessingPhaseInput: MatchProcessingPhaseInput,
         private readonly matchMapper: MatchMapper,
         private readonly matchComparator: MatchComparator,
+        private readonly matchProcessingService: MatchProcessingService,
         private readonly fixtureEntityMapper: FixtureEntityMapper,
         private readonly fixtureRepository: FixtureRepository,
         private readonly fixtureAuditRepository: FixtureAuditRepository
@@ -124,19 +122,17 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     }
 
     private async processMatchPlayerStats(matchId: number): Promise<void> {
-        const { leagueSeasonTeamIdentifier, teamName } = this.context;
-
-        const MATCHES_PLAYER_STATS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "matches-player-stats.json");
+        const { leagueSeasonTeamIdentifier } = this.context;
 
         // API Data
         const latestMatch = await fetchMatch(matchId);
         const latestMatchData = this.matchMapper.toMatchPlayerStats(latestMatch, matchId, leagueSeasonTeamIdentifier);
 
         // Stored Data (JSON)
-        const storedMatches = loadMatchesPlayerStats(leagueSeasonTeamIdentifier);
+        const storedMatches = await this.matchProcessingService.findMatchPlayerStatsForLeagueSeasonTeam(leagueSeasonTeamIdentifier);
 
         if (matchId in storedMatches) { // current match exists in stored matches
-            const storedPlayerStats = storedMatches[matchId].playerStats ?? {};
+            const storedPlayerStats = storedMatches[matchId].data ?? {};
 
             for (const [playerId, latestPlayer] of Object.entries(
                 latestMatchData.playerStats ?? {},
@@ -149,7 +145,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
                 }
 
                 for (const latestSection of latestPlayer.stats ?? []) {
-                    const storedStatSection = storedPlayer.stats?.find(
+                    const storedStatSection = storedPlayer?.stats?.find(
                         section => section.key === latestSection.key,
                     );
 
@@ -187,36 +183,41 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
                 }
             }
         } else {
-            storedMatches[matchId] = latestMatchData;
+            storedMatches[matchId] = {
+                season: leagueSeasonTeamIdentifier.season,
+                leagueId: leagueSeasonTeamIdentifier.leagueId,
+                teamId: leagueSeasonTeamIdentifier.teamId ?? 0,
+                matchId: matchId,
+                data: latestMatchData.playerStats ?? null
+            }
         }
 
-        saveJson<MatchesPlayerStats>(
-            MATCHES_PLAYER_STATS_FILE,
-            storedMatches
-        );
+        await this.matchProcessingService.saveMatchPlayerStatsForLeagueSeasonTeam(storedMatches);
     }
 
     private async processMatchGoalscorers(latestMatch: MatchResponse, matchId: number): Promise<void> {
         const { leagueSeasonTeamIdentifier } = this.context;
 
-        const MATCHES_GOALSCORERS_FILE = path.join(getDataDirectory("data", leagueSeasonTeamIdentifier), "matches-goalscorers.json");
-
         // API Data
         const latestMatchData = this.matchMapper.toMatchGoalscorers(latestMatch, matchId, leagueSeasonTeamIdentifier);
 
         // Stored Data (JSON)
-        const storedMatches = loadMatchesGoalScorers(leagueSeasonTeamIdentifier);
+        const storedMatches = await this.matchProcessingService.findMatchGoalscorersForLeagueSeasonTeam(leagueSeasonTeamIdentifier);
 
         if (matchId in storedMatches) { // current match exists in stored matches
             // TODO: check for goalscorer changes
         } else {
-            storedMatches[matchId] = latestMatchData;
+            storedMatches[matchId] = {
+                season: leagueSeasonTeamIdentifier.season,
+                leagueId: leagueSeasonTeamIdentifier.leagueId,
+                teamId: leagueSeasonTeamIdentifier.teamId ?? 0,
+                matchId: matchId,
+                data: latestMatchData?.goalscorers ?? null,
+                potm: latestMatchData.playerOfTheMatch ?? null
+            }
         }
 
-        saveJson<MatchesGoalscorers>(
-            MATCHES_GOALSCORERS_FILE,
-            storedMatches
-        );
+        await this.matchProcessingService.saveMatchGoalscorersForLeagueSeasonTeam(storedMatches);
     }
 
     private async markFixtureAsProcessed(matchId: number, latestMatch: MatchResponse) {
