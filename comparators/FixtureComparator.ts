@@ -6,6 +6,14 @@ export class FixtureComparator extends Comparator<FixtureData, Fixture> {
     constructor() {
         super([
             {
+                newField: "completed",
+                oldField: "completed",
+            },
+            {
+                newField: "notStarted",
+                oldField: "notStarted",
+            },
+            {
                 newField: "homeScore",
                 oldField: "homeScore",
             },

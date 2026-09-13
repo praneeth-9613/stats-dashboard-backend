@@ -38,9 +38,6 @@ export class Fixture {
     @Column({ type: "varchar", nullable: true })
     competitionStage!: string | null;
 
-    @Column({ type: "varchar" })
-    homeAway!: string;
-
     @Column({ type: "boolean" })
     completed!: boolean;
 

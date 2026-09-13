@@ -37,23 +37,6 @@ export class SquadsPhase extends SyncPhase<"discover_players_to_add" | "discover
         // DB Data
         const storedSquad = await this.playerTeamRepository.findByLeagueSeasonTeam(squadPhaseInput.leagueSeasonTeamIdentifier);
 
-        const storedPlayerIds = new Set(
-            storedSquad.map(playerTeam => playerTeam.playerId)
-        );
-
-        // Discover additions/removals
-        const latestPlayerIds = new Set(
-            squadData.map(player => player.playerId)
-        );
-
-        const playersAdded = squadData.filter(
-            player => !storedPlayerIds.has(player.playerId)
-        );
-
-        const playersRemoved = storedSquad.filter(
-            playerTeam => !latestPlayerIds.has(playerTeam.playerId)
-        );
-
         const playersToAdd = squadData
             .filter(player => {
                 const playerTeam = this.getPlayerTeam(

@@ -10,7 +10,6 @@ export class FixtureEntityMapper {
         fixture.season = fixtureData.season;
         fixture.leagueId = fixtureData.leagueId;
         fixture.teamId = fixtureData.teamId;
-        fixture.homeAway = fixtureData.homeAway;
         fixture.competition = fixtureData.competition;
         fixture.competitionId = fixtureData.competitionId;
         fixture.competitionStage = fixtureData.competitionStage;
