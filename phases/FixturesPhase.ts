@@ -11,8 +11,9 @@ import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper"
 import { FixtureAuditRepository } from "../persistence/repositories/FixtureAuditRepository";
 import { FixtureComparator } from "../comparators/FixtureComparator";
 import { SyncPhase } from "./SyncPhase";
+import { sleep } from "../helper";
 
-export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtures" | "mark_for_processing_fixtures"> {
+export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtures" | "mark_for_processing_fixtures" | "sync_player_stats_fixtures"> {
 
     private phaseTotal = 0;
 
@@ -20,6 +21,7 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
         "add_fixtures",
         "reschedule_fixtures",
         "mark_for_processing_fixtures",
+        "sync_player_stats_fixtures"
     ] as const;
 
     constructor(protected context: SyncContext, private readonly teamResponse: TeamResponse, private readonly fixtureMapper: FixtureMapper, private readonly fixtureEntityMapper: FixtureEntityMapper, private readonly fixtureComparator: FixtureComparator, private readonly fixtureRepository: FixtureRepository, private readonly fixtureAuditRepository: FixtureAuditRepository) { super(context); }
@@ -119,7 +121,8 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
                     fixturesAdded,
                     fixturesRescheduled,
                     latestFixturesById,
-                    fixturesToBeProcessed
+                    fixturesToBeProcessed,
+                    fixturesToSyncPlayerStats
                 ),
         );
 
@@ -131,7 +134,8 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
         fixturesAdded: FixtureData[],
         fixturesRescheduled: Fixture[],
         latestFixturesById: Map<number, FixtureData>,
-        fixturesToBeProcessed: Fixture[]
+        fixturesToBeProcessed: Fixture[],
+        fixturesToSyncPlayerStats: number[]
     ): Promise<void> {
 
         await this.executeStep(
@@ -165,6 +169,15 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
                 fixturesToBeProcessed,
                 latestFixturesById,
             ),
+        );
+
+        await this.executeStep(
+            "sync_player_stats_fixtures",
+            fixturesToSyncPlayerStats.length,
+            fixturesToSyncPlayerStats.length > 0
+                ? `Marking ${fixturesToSyncPlayerStats.length} fixtures for syncing player stats`
+                : "No fixtures to sync player stats",
+            () => sleep(1500),
         );
     }
 
