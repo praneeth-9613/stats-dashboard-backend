@@ -1,6 +1,6 @@
 import { MatchStatSectionResponse } from "../../api/types/RawMatch";
-import { MatchPlayer } from "../../persistence/json/Matches";
-import { SeasonPlayerStats, SeasonStat } from "../../persistence/json/SeasonStats";
+import { MatchPlayer } from "../types/Matches";
+import { SeasonPlayerStats, SeasonStat } from "../types/SeasonStats";
 
 export class SeasonStatsMapper {
 
@@ -19,6 +19,7 @@ export class SeasonStatsMapper {
 
             return {
                 playerId: matchPlayer.playerId,
+                teamId: matchPlayer.teamId,
                 name: matchPlayer.name,
                 appearances: minutesPlayed > 0 ? 1 : 0,
                 ratingSum: rating ?? 0,

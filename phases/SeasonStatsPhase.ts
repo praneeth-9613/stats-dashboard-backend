@@ -79,9 +79,9 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
             )) {
                 const playerId = player.playerId;
 
-                teamSeasonStats.data[playerId] =
+                teamSeasonStats.data[`${playerId}-${teamSeasonStats.teamId}`] =
                     this.seasonStatsMapper.aggregatePlayer(
-                        teamSeasonStats.data[playerId],
+                        teamSeasonStats.data[`${playerId}-${teamSeasonStats.teamId}`],
                         player,
                     );
             }

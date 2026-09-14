@@ -1,14 +1,15 @@
 import { DataSource, In } from "typeorm";
 import { LeagueSeasonTeamIdentifier } from "../application/types/PhaseInput";
 import { PlayerTeam } from "../persistence/entities/PlayerTeam";
-import { FixtureAudit } from "../persistence/entities/FixtureAudit";
-import { Fixture } from "../persistence/entities/Fixture";
+import { Fixture, FixtureStatus } from "../persistence/entities/Fixture";
 import { Player } from "../persistence/entities/Player";
 import { AppDataSource } from "../persistence/data-source";
-import { injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { MatchPlayerStats } from "../persistence/entities/MatchPlayerStats";
 import { MatchGoalscorers } from "../persistence/entities/MatchGoalscorers";
 import { TeamSeasonStats } from "../persistence/entities/TeamSeasonStats";
+import { FixtureAudit } from "../persistence/entities/FixtureAudit";
+import { FixtureEntityMapper } from "../persistence/mappers/FixtureEntityMapper";
 
 @injectable()
 export class TeamResetService {
@@ -16,6 +17,8 @@ export class TeamResetService {
     private readonly dataSource: DataSource = AppDataSource;
 
     constructor(
+        @inject(FixtureEntityMapper)
+        private readonly fixtureEntityMapper: FixtureEntityMapper
     ) { }
 
     async resetTeam(
@@ -41,33 +44,40 @@ export class TeamResetService {
 
                 const fixtures =
                     await manager.find(Fixture, {
-                        where: {
-                            teamId: identifier.teamId,
-                            leagueId: identifier.leagueId,
-                            season: identifier.season,
-                        },
+                        where: [
+                            {
+                                season: identifier.season,
+                                leagueId: identifier.leagueId,
+                                homeId: identifier.teamId,
+                                fixtureStatus: FixtureStatus.PROCESSED
+                            },
+                            {
+                                season: identifier.season,
+                                leagueId: identifier.leagueId,
+                                awayId: identifier.teamId,
+                                fixtureStatus: FixtureStatus.PROCESSED
+                            }
+                        ]
                     });
 
-                const matchIds = fixtures.map(
-                    fixture => fixture.matchId,
-                );
-
-                // Delete fixture audits first
-                await manager.delete(
+                await manager.save(
                     FixtureAudit,
-                    {
-                        matchId: In(matchIds),
-                    },
+                    fixtures.map(fixture => this.fixtureEntityMapper.toFixtureAuditEntity(fixture, "fixtureStatus", FixtureStatus.PROCESSED, FixtureStatus.NEW))
                 );
 
-                // Delete fixtures
-                await manager.delete(
+                await manager.save(
+                    FixtureAudit,
+                    fixtures.map(fixture => this.fixtureEntityMapper.toFixtureAuditEntity(fixture, "completed", true, false))
+                );
+
+                // Update fixtures which were PROCESSED back to NEW
+                await manager.update(
                     Fixture,
+                    fixtures.map(fixture => fixture.matchId),
                     {
-                        leagueId: identifier.leagueId,
-                        teamId: identifier.teamId,
-                        season: identifier.season,
-                    },
+                        fixtureStatus: FixtureStatus.NEW,
+                        completed: false
+                    }
                 );
 
                 // Delete PlayerTeams
