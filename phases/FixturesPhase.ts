@@ -89,7 +89,7 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
         );
         const storedFixturesNotSyncedForCurrentTeam =
             storedFixtures.filter(storedFixture => {
-                if (fixturesToProcessIds.has(storedFixture.matchId)) {
+                if (fixturesToProcessIds.has(storedFixture.matchId) || storedFixture.fixtureStatus !== FixtureStatus.PROCESSED) {
                     return false;
                 }
 
