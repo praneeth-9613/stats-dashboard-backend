@@ -210,7 +210,8 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             storedMatches[matchId] = {
                 season: leagueSeasonTeamIdentifier.season,
                 leagueId: leagueSeasonTeamIdentifier.leagueId,
-                teamId: leagueSeasonTeamIdentifier.teamId ?? 0,
+                homeId: latestMatchData.homeId,
+                awayId: latestMatchData.awayId,
                 matchId: matchId,
                 data: latestMatchData?.goalscorers ?? null,
                 potm: latestMatchData.playerOfTheMatch ?? null

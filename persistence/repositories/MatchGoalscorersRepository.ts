@@ -12,7 +12,18 @@ export class MatchGoalscorersRepository {
     ) { }
 
     async findByLeagueSeasonTeam(leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): Promise<MatchGoalscorers[]> {
-        return this.repository.findBy({ season: leagueSeasonTeamIdentifier.season, leagueId: leagueSeasonTeamIdentifier.leagueId, teamId: leagueSeasonTeamIdentifier.teamId });
+        return this.repository.findBy(
+            [{
+                season: leagueSeasonTeamIdentifier.season,
+                leagueId: leagueSeasonTeamIdentifier.leagueId,
+                homeId: leagueSeasonTeamIdentifier.teamId
+            },
+            {
+                season: leagueSeasonTeamIdentifier.season,
+                leagueId: leagueSeasonTeamIdentifier.leagueId,
+                awayId: leagueSeasonTeamIdentifier.teamId
+            },
+            ]);
     }
 
     async findByMatchId(matchId: number): Promise<MatchGoalscorers | null> {

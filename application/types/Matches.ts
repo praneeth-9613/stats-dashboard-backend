@@ -29,6 +29,8 @@ export interface MatchPlayer {
 
 export interface MatchGoalscorers {
     matchId: number;
+    homeId: number;
+    awayId: number;
     leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier;
     goalscorers?: MatchHeaderEvents;
     playerOfTheMatch?: PlayerOfTheMatch | null;

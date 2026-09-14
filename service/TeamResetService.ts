@@ -114,11 +114,18 @@ export class TeamResetService {
                     season: identifier.season,
                 })
 
-                await manager.delete(MatchGoalscorers, {
-                    teamId: identifier.teamId,
-                    leagueId: identifier.leagueId,
-                    season: identifier.season,
-                })
+                await manager.delete(
+                    MatchGoalscorers,
+                    fixtures.map(fixture => {
+                        return {
+                            matchId: fixture.matchId,
+                            leagueId: identifier.leagueId,
+                            season: identifier.season,
+                            homeId: fixture.homeId,
+                            awayId: fixture.awayId
+                        }
+                    })
+                );
 
                 await manager.delete(TeamSeasonStats, {
                     teamId: identifier.teamId,

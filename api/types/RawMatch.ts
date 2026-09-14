@@ -37,4 +37,14 @@ export interface MatchResponse {
         matchFacts?: MatchFactsResponse;
     };
     header?: MatchHeaderResponse;
+    general?: {
+        homeTeam: {
+            name: string
+            id: number
+        },
+        awayTeam: {
+            name: string
+            id: number
+        },
+    }
 }

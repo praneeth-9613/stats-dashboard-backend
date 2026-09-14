@@ -45,6 +45,8 @@ export class MatchMapper {
     toMatchGoalscorers(matchResponse: MatchResponse, matchId: number, leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): MatchGoalscorers {
         return {
             matchId,
+            homeId: matchResponse.general?.homeTeam.id ?? 0,
+            awayId: matchResponse.general?.awayTeam.id ?? 0,
             leagueSeasonTeamIdentifier,
             goalscorers: matchResponse.header?.events
                 ? this.toMatchHeaderEvents(matchResponse.header?.events)
