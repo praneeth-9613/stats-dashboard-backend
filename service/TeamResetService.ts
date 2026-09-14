@@ -71,14 +71,26 @@ export class TeamResetService {
                 );
 
                 // Update fixtures which were PROCESSED back to NEW
-                await manager.update(
-                    Fixture,
-                    fixtures.map(fixture => fixture.matchId),
-                    {
+                for (const fixture of fixtures) {
+                    const updateData: Partial<Fixture> = {
                         fixtureStatus: FixtureStatus.NEW,
-                        completed: false
+                        completed: false,
+                    };
+
+                    if (fixture.homeId === identifier.teamId) {
+                        updateData.homeTeamMatchPlayerStatsSynced = false;
                     }
-                );
+
+                    if (fixture.awayId === identifier.teamId) {
+                        updateData.awayTeamMatchPlayerStatsSynced = false;
+                    }
+
+                    await manager.update(
+                        Fixture,
+                        fixture.matchId,
+                        updateData
+                    );
+                }
 
                 // Delete PlayerTeams
                 await manager.delete(
