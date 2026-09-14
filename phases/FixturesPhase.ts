@@ -83,10 +83,30 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
 
         const fixturesToBeProcessed = [...fixturesAdded.filter(fixture => fixture.completed).map(fixture => this.fixtureEntityMapper.toEntity(fixture, FixtureStatus.NEW)), ...fixturesNewlyCompleted];
         const fixturesToProcess = fixturesToBeProcessed.map(fixture => fixture.matchId);
-        const fixturesToBeChecked = latestFixtureData.filter(fixture => !fixturesToProcess.includes(fixture.matchId));
+
+        const fixturesToProcessIds = new Set(
+            fixturesToBeProcessed.map(fixture => fixture.matchId)
+        );
+        const storedFixturesNotSyncedForCurrentTeam =
+            storedFixtures.filter(storedFixture => {
+                if (fixturesToProcessIds.has(storedFixture.matchId)) {
+                    return false;
+                }
+
+                return (
+                    (storedFixture.homeId === leagueSeasonTeamIdentifier.teamId &&
+                        !storedFixture.homeTeamMatchPlayerStatsSynced) ||
+                    (storedFixture.awayId === leagueSeasonTeamIdentifier.teamId &&
+                        !storedFixture.awayTeamMatchPlayerStatsSynced)
+                );
+            });
+
+        const fixturesToSyncPlayerStats = storedFixturesNotSyncedForCurrentTeam.map(fixture => fixture.matchId);
+
+        const fixturesToBeChecked = latestFixtureData.filter(fixture => !fixturesToProcess.includes(fixture.matchId) && !fixturesToSyncPlayerStats.includes(fixture.matchId));
         const fixturesToCheck = fixturesToBeChecked.map(fixture => fixture.matchId);
 
-        this.phaseTotal = [...fixturesAdded, ...fixturesRescheduled, ...fixturesToBeProcessed].length;
+        this.phaseTotal = [...fixturesAdded, ...fixturesRescheduled, ...fixturesToBeProcessed, ...fixturesToSyncPlayerStats].length;
 
         await this.execute(
             "fixtures",
@@ -104,7 +124,7 @@ export class FixturesPhase extends SyncPhase<"add_fixtures" | "reschedule_fixtur
         );
 
         // Outputs
-        return { fixturesToCheck, fixturesToProcess }
+        return { fixturesToCheck, fixturesToProcess, fixturesToSyncPlayerStats }
     }
 
     private async work(

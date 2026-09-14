@@ -65,6 +65,12 @@ export class Fixture {
     @Column({ type: "integer", nullable: true })
     awayScore!: number | null;
 
+    @Column({ type: "boolean", default: false })
+    homeTeamMatchPlayerStatsSynced!: boolean;
+
+    @Column({ type: "boolean", default: false })
+    awayTeamMatchPlayerStatsSynced!: boolean;
+
     @Column({ type: "varchar", nullable: true })
     scoreStr!: string | null;
 

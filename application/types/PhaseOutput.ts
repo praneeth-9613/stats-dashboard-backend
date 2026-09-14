@@ -7,4 +7,5 @@ export interface SquadPhaseOutput {
 export interface FixturesPhaseOutput {
     fixturesToCheck: number[];
     fixturesToProcess: number[];
+    fixturesToSyncPlayerStats: number[]
 }

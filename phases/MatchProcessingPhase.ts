@@ -13,12 +13,13 @@ import { MatchProcessingPhaseInput } from "../application/types/PhaseInput";
 import { sleep } from "../helper";
 import { MatchProcessingService } from "../service/MatchProcessingService";
 
-export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "process_goalscorers"> {
+export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "process_goalscorers" | "sync_player_stats"> {
 
     private phaseTotal = 0;
     protected readonly steps = [
         "process_player_stats",
         "process_goalscorers",
+        "sync_player_stats"
     ] as const;
 
     constructor(
@@ -52,7 +53,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     private async work(): Promise<void> {
         const { scrapeStatus } = this.context;
 
-        const { fixturesToCheck, fixturesToProcess } = this.matchProcessingPhaseInput;
+        const { fixturesToCheck, fixturesToProcess, fixturesToSyncPlayerStats } = this.matchProcessingPhaseInput;
 
         const fixturesToUpdate = []
 
@@ -117,8 +118,27 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             await this.markFixtureAsProcessed(matchId, latestMatch);
         }
 
+        this.context.logger?.info(`Starting step sync_player_stats `);
+        this.startStep("sync_player_stats", fixturesToSyncPlayerStats.length, `Syncing ${fixturesToSyncPlayerStats.length} player stats`)
+
+        for (const matchId of fixturesToSyncPlayerStats) {
+            const latestMatch = await fetchMatch(matchId);
+
+            await this.processMatchPlayerStats(matchId);
+
+            this.updateStep(
+                scrapeStatus,
+                "sync_player_stats",
+                ++statsIndex,
+                `Syncing player stats ${statsIndex} of ${fixturesToSyncPlayerStats.length}`,
+            );
+
+            await this.markFixturePlayerStatsAsSynced(matchId, latestMatch.general?.homeTeam.id === this.context.leagueSeasonTeamIdentifier.teamId);
+        }
+
         this.context.logger?.info(`Completing step process_player_stats `);
         this.context.logger?.info(`Completing step process_goalscorers `);
+        this.context.logger?.info(`Completing step sync_player_stats `);
     }
 
     private async processMatchPlayerStats(matchId: number): Promise<void> {
@@ -244,6 +264,29 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             fixture.stadiumName = stadium?.name ?? null;
             fixture.stadiumCity = stadium?.city ?? null;
             fixture.stadiumCountry = stadium?.country ?? null;
+
+            await this.fixtureRepository.save(fixture);
+            await this.fixtureAuditRepository.save(audit)
+        }
+    }
+
+    private async markFixturePlayerStatsAsSynced(matchId: number, isHomeTeam: boolean) {
+        const fixture = await this.fixtureRepository.findByMatchId(matchId);
+
+        if (fixture !== null) {
+            if (isHomeTeam) {
+                fixture.homeTeamMatchPlayerStatsSynced = true;
+            } else {
+                fixture.awayTeamMatchPlayerStatsSynced = true;
+            }
+
+            const audit: FixtureAudit =
+                this.fixtureEntityMapper.toFixtureAuditEntity(
+                    fixture,
+                    isHomeTeam ? "homeTeamMatchPlayerStatsSynced" : "awayTeamMatchPlayerStatsSynced",
+                    false,
+                    true,
+                );
 
             await this.fixtureRepository.save(fixture);
             await this.fixtureAuditRepository.save(audit)
