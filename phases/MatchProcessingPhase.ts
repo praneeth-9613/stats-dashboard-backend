@@ -36,9 +36,9 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
     }
 
     async run(): Promise<void> {
-        const { fixturesToProcess } = this.matchProcessingPhaseInput;
+        const { fixturesToProcess, fixturesToSyncPlayerStats } = this.matchProcessingPhaseInput;
 
-        this.phaseTotal = fixturesToProcess.length;
+        this.phaseTotal = [...fixturesToProcess, fixturesToSyncPlayerStats].length;
 
         await this.execute(
             "match_processing",
@@ -61,7 +61,6 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             const latestMatch = await fetchMatch(fixture);
             const stadium = latestMatch.content?.matchFacts?.infoBox?.Stadium;
 
-
             const storedFixture = await this.fixtureRepository.findByMatchId(fixture);
 
             if (storedFixture !== null && (stadium?.name !== storedFixture?.stadiumName || stadium?.city !== storedFixture?.stadiumCity || stadium?.country !== storedFixture?.stadiumCountry)) {
@@ -80,42 +79,56 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
         let statsIndex = 0;
         let goalscorersIndex = 0;
 
+        let skipProcessing: boolean = false
+
         if (fixturesToProcess.length === 0) {
             this.updateEmptyStep("process_player_stats");
             this.updateEmptyStep("process_goalscorers");
 
+            this.updateEmptyStep("sync_player_stats");
+
             await sleep(1500);
-            return;
+            skipProcessing = true;
         }
 
-        this.context.logger?.info(`Starting step process_player_stats `);
-        this.startStep("process_player_stats", fixturesToProcess.length, `Processing ${fixturesToProcess.length} player stats`)
+        if (!skipProcessing) {
 
-        this.context.logger?.info(`Starting step process_goalscorers `);
-        this.startStep("process_goalscorers", fixturesToProcess.length, `Processing ${fixturesToProcess.length} goalscorers`)
+            this.context.logger?.info(`Starting step process_player_stats `);
+            this.startStep("process_player_stats", fixturesToProcess.length, `Processing ${fixturesToProcess.length} player stats`)
 
-        for (const matchId of fixturesToProcess) {
-            const latestMatch = await fetchMatch(matchId);
+            this.context.logger?.info(`Starting step process_goalscorers `);
+            this.startStep("process_goalscorers", fixturesToProcess.length, `Processing ${fixturesToProcess.length} goalscorers`)
 
-            await this.processMatchPlayerStats(matchId);
+            for (const matchId of fixturesToProcess) {
+                const latestMatch = await fetchMatch(matchId);
 
-            this.updateStep(
-                scrapeStatus,
-                "process_player_stats",
-                ++statsIndex,
-                `Processing player stats ${statsIndex} of ${fixturesToProcess.length}`,
-            );
+                await this.processMatchPlayerStats(matchId);
 
-            await this.processMatchGoalscorers(latestMatch, matchId);
+                this.updateStep(
+                    scrapeStatus,
+                    "process_player_stats",
+                    ++statsIndex,
+                    `Processing player stats ${statsIndex} of ${fixturesToProcess.length}`,
+                );
 
-            this.updateStep(
-                scrapeStatus,
-                "process_goalscorers",
-                ++goalscorersIndex,
-                `Processing goal scorers ${goalscorersIndex} of ${fixturesToProcess.length}`,
-            );
+                await this.processMatchGoalscorers(latestMatch, matchId);
 
-            await this.markFixtureAsProcessed(matchId, latestMatch);
+                this.updateStep(
+                    scrapeStatus,
+                    "process_goalscorers",
+                    ++goalscorersIndex,
+                    `Processing goal scorers ${goalscorersIndex} of ${fixturesToProcess.length}`,
+                );
+
+                await this.markFixtureAsProcessed(matchId, latestMatch);
+            }
+        }
+
+        if (fixturesToSyncPlayerStats.length === 0) {
+            this.updateEmptyStep("sync_player_stats");
+
+            await sleep(1500);
+            return;
         }
 
         this.context.logger?.info(`Starting step sync_player_stats `);
