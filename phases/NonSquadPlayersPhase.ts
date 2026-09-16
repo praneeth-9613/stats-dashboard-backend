@@ -115,6 +115,9 @@ export class NonSquadPlayersPhase extends SyncPhase<"check_players"> {
         } = this.context;
 
         const latestPlayer = await fetchPlayer(playerId);
+
+        if (latestPlayer === null) return;
+        
         const latestPlayerData = this.playerMapper.toPlayerData(latestPlayer);
 
         await this.playerRepository.save(this.playerEntityMapper.toPlayerEntity(latestPlayerData.profile, latestPlayerData.positions, latestPlayerData.injury));
