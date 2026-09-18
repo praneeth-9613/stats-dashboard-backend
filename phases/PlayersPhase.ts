@@ -213,10 +213,12 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             return;
         }
 
+        const latestPlayerTeamId = latestPlayerTeam?.teamId ?? null;
+
         const reserveTeams = await this.reserveTeamRepository.findByParentTeamId(leagueSeasonTeamIdentifier?.teamId ?? 0);
 
         const newTeamStatus = this.findNewTeamStatus(
-            latestPlayerTeamId ?? null,
+            latestPlayerTeamId,
             reserveTeams.map(reserveTeam => reserveTeam.teamId)
         );
 
