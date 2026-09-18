@@ -11,6 +11,7 @@ import { PlayerAuditRepository } from "../persistence/repositories/PlayerAuditRe
 import { PlayerTeamComparator } from "../comparators/PlayerTeamComparator";
 import { PlayerTeamAuditRepository } from "../persistence/repositories/PlayerTeamAuditRepository";
 import { TeamRepository } from "../persistence/repositories/TeamRepository";
+import { ReserveTeamRepository } from "../persistence/repositories/ReserveTeamRepository";
 
 @injectable()
 export class PlayersPhaseFactory {
@@ -29,6 +30,8 @@ export class PlayersPhaseFactory {
         private readonly playerAuditRepository: PlayerAuditRepository,
         @inject(PlayerTeamAuditRepository)
         private readonly playerTeamAuditRepository: PlayerTeamAuditRepository,
+        @inject(ReserveTeamRepository)
+        private readonly reserveTeamRepository: ReserveTeamRepository,
         @inject(PlayerComparator)
         private readonly playerComparator: PlayerComparator,
         @inject(PlayerTeamComparator)
