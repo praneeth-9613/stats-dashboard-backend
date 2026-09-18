@@ -49,6 +49,7 @@ export class PlayersPhaseFactory {
             this.playerTeamRepository,
             this.playerAuditRepository,
             this.playerTeamAuditRepository,
+            this.reserveTeamRepository,
             this.playerComparator,
             this.playerTeamComparator
         );
