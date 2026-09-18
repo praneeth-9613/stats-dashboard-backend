@@ -17,6 +17,7 @@ import { PlayerData, PlayerTeamData } from "../application/types/PlayerData";
 import { Player } from "../persistence/entities/Player";
 import { injectable } from "tsyringe";
 import { TeamRepository } from "../persistence/repositories/TeamRepository";
+import { ReserveTeamRepository } from "../persistence/repositories/ReserveTeamRepository";
 
 @injectable()
 export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "remove_players"> {
@@ -29,7 +30,7 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
         "remove_players",
     ] as const;
 
-    constructor(protected context: SyncContext, private readonly playerPhaseInput: PlayerPhaseInput, private readonly playerMapper: PlayerMapper, private readonly playerEntityMapper: PlayerEntityMapper, private readonly teamRepository: TeamRepository, private readonly playerRepository: PlayerRepository, private readonly playerTeamRepository: PlayerTeamRepository, private readonly playerAuditRepository: PlayerAuditRepository, private readonly playerTeamAuditRepository: PlayerTeamAuditRepository, private readonly playerComparator: PlayerComparator, private readonly playerTeamComparator: PlayerTeamComparator) {
+    constructor(protected context: SyncContext, private readonly playerPhaseInput: PlayerPhaseInput, private readonly playerMapper: PlayerMapper, private readonly playerEntityMapper: PlayerEntityMapper, private readonly teamRepository: TeamRepository, private readonly playerRepository: PlayerRepository, private readonly playerTeamRepository: PlayerTeamRepository, private readonly playerAuditRepository: PlayerAuditRepository, private readonly playerTeamAuditRepository: PlayerTeamAuditRepository, private readonly reserveTeamRepository: ReserveTeamRepository, private readonly playerComparator: PlayerComparator, private readonly playerTeamComparator: PlayerTeamComparator) {
         super(context);
 
         const {
@@ -212,8 +213,11 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
             return;
         }
 
+        const reserveTeams = await this.reserveTeamRepository.findByParentTeamId(leagueSeasonTeamIdentifier?.teamId ?? 0);
+
         const newTeamStatus = this.findNewTeamStatus(
-            latestPlayerTeam?.teamId ?? null,
+            latestPlayerTeamId ?? null,
+            reserveTeams.map(reserveTeam => reserveTeam.teamId)
         );
 
         const transferredTo =
@@ -320,11 +324,16 @@ export class PlayersPhase extends SyncPhase<"add_players" | "check_players" | "r
 
     private findNewTeamStatus(
         latestPlayerTeamId: number | null,
+        reserveTeamIds: number[]
     ): TeamStatus {
         const { leagueSeasonTeamIdentifier } = this.context;
 
         if (latestPlayerTeamId === null) {
             return TeamStatus.NOT_IN_SQUAD;
+        }
+
+        if (reserveTeamIds.includes(latestPlayerTeamId)) {
+            return TeamStatus.RESERVE;
         }
 
         return latestPlayerTeamId === leagueSeasonTeamIdentifier.teamId
