@@ -3,9 +3,9 @@ import { LeagueSeasonTeam } from "./LeagueSeasonTeam";
 import { SeasonPlayerStats } from "../../application/types/SeasonStats";
 
 export type SeasonStatsView =
-  | "all"
-  | "competitive"
-  | "domestic_league";
+    | "all"
+    | "competitive"
+    | "domestic_league";
 
 @Entity("teamSeasonStats")
 export class TeamSeasonStats {
@@ -23,6 +23,12 @@ export class TeamSeasonStats {
 
     @Column({ type: "integer" })
     matchesProcessed!: number;
+
+    @Column({ type: "integer", nullable: true })
+    competitiveMatchesProcessed!: number | null;
+
+    @Column({ type: "integer", nullable: true })
+    leagueMatchesProcessed!: number | null;
 
     @Column({ type: "varchar" })
     generatedAt!: string | null;
