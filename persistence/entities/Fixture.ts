@@ -44,6 +44,9 @@ export class Fixture {
     @Column({ type: "boolean" })
     notStarted!: boolean;
 
+    @Column({ type: "boolean", default: false })
+    cancelled!: boolean;
+
     @Column({ type: "timestamp" })
     fixtureDate!: Date;
 

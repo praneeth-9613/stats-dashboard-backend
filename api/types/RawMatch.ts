@@ -47,5 +47,5 @@ export interface MatchResponse {
             id: number
         },
         parentLeagueId: number
-    }
+    },
 }

@@ -19,5 +19,8 @@ export interface MatchHeaderEventsResponse {
 }
 
 export interface MatchHeaderResponse {
-    events?: MatchHeaderEventsResponse
+    events?: MatchHeaderEventsResponse,
+    status?: {
+        cancelled: boolean
+    }
 }

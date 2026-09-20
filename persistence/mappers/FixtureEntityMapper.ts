@@ -23,6 +23,7 @@ export class FixtureEntityMapper {
         fixture.isPenaltyShootout = fixtureData.isPenaltyShootout;
         fixture.completed = fixtureData.completed;
         fixture.notStarted = fixtureData.notStarted;
+        fixture.cancelled = fixtureData.cancelled;
         fixture.fixtureDate = new Date(fixtureData.fixtureDate);
         fixture.fixtureStatus = fixtureStatus;
 

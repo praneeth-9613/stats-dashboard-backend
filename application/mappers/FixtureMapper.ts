@@ -5,7 +5,7 @@ import { LeagueSeasonTeamIdentifier } from "../types/PhaseInput"
 export class FixtureMapper {
 
     toFixtureData(fixtureResponse: FixtureResponse[], leagueSeasonTeamIdentifier: LeagueSeasonTeamIdentifier): FixtureData[] {
-        return fixtureResponse.map(fixture => {
+        return fixtureResponse.map(fixture => {           
             return {
                 matchId: fixture.id,
                 season: leagueSeasonTeamIdentifier.season,
@@ -16,6 +16,7 @@ export class FixtureMapper {
                 competitionStage: fixture.tournament.stage ?? null,
                 homeAway: (fixture.home.id === leagueSeasonTeamIdentifier.teamId) ? "home" : "away",
                 completed: fixture.status.finished,
+                cancelled: fixture.status.cancelled,
                 fixtureDate: fixture.status.utcTime,
                 homeId: fixture.home.id,
                 awayId: fixture.away.id,

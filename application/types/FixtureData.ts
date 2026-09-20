@@ -17,6 +17,8 @@ export interface FixtureData {
 
     completed: boolean;
 
+    cancelled: boolean;
+
     fixtureDate: string;
 
     homeId: number;

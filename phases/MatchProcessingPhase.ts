@@ -68,8 +68,16 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
                 storedFixture.stadiumCity = stadium?.city ?? null;
                 storedFixture.stadiumCountry = stadium?.country ?? null;
 
+            }
+
+            if (storedFixture !== null && storedFixture?.cancelled !== latestMatch.header?.status?.cancelled) {
+                storedFixture.cancelled = latestMatch.header?.status?.cancelled ?? false;
+            }
+
+            if (storedFixture !== null) {
                 fixturesToUpdate.push(storedFixture);
             }
+
         }
 
         if (fixturesToUpdate.length > 0) {
