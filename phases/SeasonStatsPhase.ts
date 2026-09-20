@@ -58,8 +58,8 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
         teamSeasonStats.leagueId = leagueSeasonTeamIdentifier.leagueId;
         teamSeasonStats.teamId = leagueSeasonTeamIdentifier.teamId ?? 0;
         teamSeasonStats.matchesProcessed = this.phaseTotal;
-        teamSeasonStats.competitiveMatchesProcessed = 0;
-        teamSeasonStats.leagueMatchesProcessed = 0;
+        teamSeasonStats.competitiveMatchesProcessed = matchesPlayerStats.filter(match => match.competitionId !== CLUB_FRIENDLY_COMPETITION_ID).length;
+        teamSeasonStats.leagueMatchesProcessed = matchesPlayerStats.filter(match => match.competitionId === leagueSeasonTeamIdentifier.leagueId).length;
         teamSeasonStats.data = { domestic_league: {}, competitive: {}, all: {} };
 
         await this.executeStep(
@@ -98,25 +98,11 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
                 // Competitive matches (everything except friendlies)
                 if (match.competitionId !== CLUB_FRIENDLY_COMPETITION_ID) {
                     aggregate(teamSeasonStats.data.competitive);
-
-                    if (
-                        teamSeasonStats.competitiveMatchesProcessed === null) {
-                        teamSeasonStats.competitiveMatchesProcessed = 1
-                    } else {
-                        teamSeasonStats.competitiveMatchesProcessed++
-                    }
                 }
 
                 // Domestic league matches
                 if (match.competitionId === teamSeasonStats.leagueId) {
                     aggregate(teamSeasonStats.data.domestic_league);
-
-                    if (
-                        teamSeasonStats.leagueMatchesProcessed === null) {
-                        teamSeasonStats.leagueMatchesProcessed = 1
-                    } else {
-                        teamSeasonStats.leagueMatchesProcessed++
-                    }
                 }
             }
         }
