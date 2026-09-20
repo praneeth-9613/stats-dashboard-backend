@@ -221,6 +221,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
                 leagueId: leagueSeasonTeamIdentifier.leagueId,
                 teamId: leagueSeasonTeamIdentifier.teamId ?? 0,
                 matchId: matchId,
+                competitionId: latestMatch.general?.parentLeagueId ?? null,
                 data: latestMatchData.playerStats ?? null
             }
         }
@@ -243,6 +244,7 @@ export class MatchProcessingPhase extends SyncPhase<"process_player_stats" | "pr
             storedMatches[matchId] = {
                 season: leagueSeasonTeamIdentifier.season,
                 leagueId: leagueSeasonTeamIdentifier.leagueId,
+                competitionId: latestMatch.general?.parentLeagueId ?? null,
                 homeId: latestMatchData.homeId,
                 awayId: latestMatchData.awayId,
                 matchId: matchId,

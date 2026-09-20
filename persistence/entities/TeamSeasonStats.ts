@@ -2,6 +2,11 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { LeagueSeasonTeam } from "./LeagueSeasonTeam";
 import { SeasonPlayerStats } from "../../application/types/SeasonStats";
 
+export type SeasonStatsView =
+  | "all"
+  | "competitive"
+  | "domestic_league";
+
 @Entity("teamSeasonStats")
 export class TeamSeasonStats {
     @PrimaryColumn({ type: "integer" })
@@ -14,7 +19,7 @@ export class TeamSeasonStats {
     teamId!: number;
 
     @Column({ type: "jsonb" })
-    data!: Record<string, SeasonPlayerStats>;
+    data!: Record<SeasonStatsView, Record<string, SeasonPlayerStats>>;
 
     @Column({ type: "integer" })
     matchesProcessed!: number;

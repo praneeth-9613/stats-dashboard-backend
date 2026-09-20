@@ -5,6 +5,8 @@ import { MatchProcessingService } from "../service/MatchProcessingService";
 import { TeamSeasonStats } from "../persistence/entities/TeamSeasonStats";
 import { MatchPlayerStats } from "../persistence/entities/MatchPlayerStats";
 import { SeasonStatsService } from "../service/SeasonStatsService";
+import { CLUB_FRIENDLY_COMPETITION_ID } from "../constants";
+import { SeasonPlayerStats } from "../application/types/SeasonStats";
 
 export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
 
@@ -56,7 +58,7 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
         teamSeasonStats.leagueId = leagueSeasonTeamIdentifier.leagueId;
         teamSeasonStats.teamId = leagueSeasonTeamIdentifier.teamId ?? 0;
         teamSeasonStats.matchesProcessed = this.phaseTotal;
-        teamSeasonStats.data = {};
+        teamSeasonStats.data = { domestic_league: {}, competitive: {}, all: {} };
 
         await this.executeStep(
             "process_team_season_stats",
@@ -77,13 +79,29 @@ export class SeasonStatsPhase extends SyncPhase<"process_team_season_stats"> {
             for (const player of Object.values(
                 match.data ?? {},
             )) {
-                const playerId = player.playerId;
+                const playerKey = `${player.playerId}-${teamSeasonStats.teamId}`;
 
-                teamSeasonStats.data[`${playerId}-${teamSeasonStats.teamId}`] =
-                    this.seasonStatsMapper.aggregatePlayer(
-                        teamSeasonStats.data[`${playerId}-${teamSeasonStats.teamId}`],
+                const aggregate = (
+                    stats: Record<string, SeasonPlayerStats>,
+                ) => {
+                    stats[playerKey] = this.seasonStatsMapper.aggregatePlayer(
+                        stats[playerKey],
                         player,
                     );
+                };
+
+                // All matches
+                aggregate(teamSeasonStats.data.all);
+
+                // Competitive matches (everything except friendlies)
+                if (match.competitionId !== CLUB_FRIENDLY_COMPETITION_ID) {
+                    aggregate(teamSeasonStats.data.competitive);
+                }
+
+                // Domestic league matches
+                if (match.competitionId === teamSeasonStats.leagueId) {
+                    aggregate(teamSeasonStats.data.domestic_league);
+                }
             }
         }
     }

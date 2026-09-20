@@ -46,5 +46,6 @@ export interface MatchResponse {
             name: string
             id: number
         },
+        parentLeagueId: number
     }
 }

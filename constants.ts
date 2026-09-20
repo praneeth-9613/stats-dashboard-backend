@@ -83,3 +83,5 @@ export const GOALKEEPER_STAT_CONFIG: Record<string, string[]> = {
         "fantasy_points"
     ]
 };
+
+export const CLUB_FRIENDLY_COMPETITION_ID = 489

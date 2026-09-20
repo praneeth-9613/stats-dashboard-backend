@@ -12,6 +12,9 @@ export class MatchGoalscorers {
     @PrimaryColumn({ type: "varchar" })
     season!: string;
 
+    @Column({ type: "integer", nullable: true })
+    competitionId!: number | null;
+
     @PrimaryColumn({ type: "integer" })
     homeId!: number;
 
